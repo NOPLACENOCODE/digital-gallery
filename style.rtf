@@ -1,4 +1,4 @@
-/* Make the background pitch black and center content */
+/* Make the background pitch black and center the logo */
 body {
     margin: 0;
     padding: 0;
@@ -7,12 +7,13 @@ body {
     align-items: center; /* Center vertically */
     justify-content: center; /* Center horizontally */
     background-color: #000; /* Black background */
-    color: #fff; /* White text */
-    font-family: 'Arial', sans-serif; /* Font for the text */
 }
 
-.title {
-    font-size: 3rem; /* Large text */
-    letter-spacing: 0.1em; /* Slight letter spacing for effect */
-    text-align: center; /* Center the text */
+.center-content {
+    text-align: center;
+}
+
+.logo {
+    max-width: 100%; /* Ensure the image scales down if too large */
+    max-height: 80vh; /* Prevent the image from being taller than the viewport */
 }
