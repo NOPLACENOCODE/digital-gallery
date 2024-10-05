@@ -39,10 +39,10 @@ body {
 
 .click-to-enter {
     color: #fff;
-    font-size: 4vw; /* Make the font size dynamic */
+    font-size: 2vw; /* Make the font size dynamic */
     text-transform: uppercase;
-    filter: drop-shadow(0 0 10px #fff); /* Glowing effect */
-    animation: pulse 1.5s infinite; /* Pulsing animation */
+    filter: drop-shadow(0 0 5px #fff); /* Glowing effect */
+    animation: pulse 0.5s infinite; /* Pulsing animation */
     font-family: 'CrushMetal', sans-serif; /* Use the custom font */
 }
 
