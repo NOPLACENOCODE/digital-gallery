@@ -1,0 +1,36 @@
+body {
+    margin: 0;
+    height: 100vh;
+    background-color: #000;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#corridor {
+    width: 80%;
+    height: 80vh;
+    background: linear-gradient(to right, #111 20%, #333 50%, #111 80%);
+    position: relative;
+    perspective: 1000px;
+}
+
+#logo-end {
+    position: absolute;
+    bottom: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    filter: drop-shadow(0 0 15px #fff);
+    animation: glow 1.5s infinite alternate;
+}
+
+.logo-end {
+    width: 10%;
+}
+
+/* Glowing animation for the end logo */
+@keyframes glow {
+    0% { filter: drop-shadow(0 0 10px #fff); }
+    100% { filter: drop-shadow(0 0 20px #fff); }
+}
