@@ -63,7 +63,7 @@ function init() {
     }
 
     // Movement Variables for Desktop
-    const moveSpeed = 0.1;
+    const moveSpeed = 0.6;
     const move = { forward: false, backward: false, left: false, right: false };
 
     document.addEventListener('keydown', (e) => {
