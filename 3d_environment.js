@@ -11,7 +11,8 @@ function init() {
 
     // Set Up Camera
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.y = 1.6; // Position the camera slightly above the ground for desktop
+    camera.position.y = 1.6; // Position the camera slightly above the ground
+
     if (window.innerWidth <= 768) {
         camera.position.y = 1.2; // Lower camera height for mobile
     }
@@ -25,9 +26,18 @@ function init() {
     const light = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(light);
 
+    // Load Texture for Floor
+    const textureLoader = new THREE.TextureLoader();
+    const floorTexture = textureLoader.load('floor_texture.jpg', (texture) => {
+        // Make sure the texture repeats
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(50, 50); // Set how many times it should repeat over the plane
+    });
+
     // Add Floor
     const floorGeometry = new THREE.PlaneGeometry(500, 500); // Large floor
-    const floorMaterial = new THREE.MeshBasicMaterial({ color: 0x333333, side: THREE.DoubleSide });
+    const floorMaterial = new THREE.MeshBasicMaterial({ map: floorTexture, side: THREE.DoubleSide });
     const floor = new THREE.Mesh(floorGeometry, floorMaterial);
     floor.rotation.x = -Math.PI / 2; // Rotate to make it flat
     scene.add(floor);
@@ -43,7 +53,6 @@ function init() {
     // Mobile Movement Controls
     if (window.innerWidth <= 768) {
         document.body.addEventListener('touchstart', (e) => {
-            // Simple logic to move forward when tapping the screen
             let touchX = e.touches[0].clientX;
             if (touchX < window.innerWidth / 2) {
                 camera.position.x -= 0.1; // Move left
