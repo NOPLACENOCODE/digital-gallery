@@ -11,7 +11,10 @@ function init() {
 
     // Set Up Camera
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.y = 1.6; // Position the camera slightly above the ground
+    camera.position.y = 1.6; // Position the camera slightly above the ground for desktop
+    if (window.innerWidth <= 768) {
+        camera.position.y = 1.2; // Lower camera height for mobile
+    }
 
     // Renderer
     renderer = new THREE.WebGLRenderer();
@@ -29,21 +32,28 @@ function init() {
     floor.rotation.x = -Math.PI / 2; // Rotate to make it flat
     scene.add(floor);
 
-    // Pointer Lock Controls
+    // Pointer Lock Controls (for desktop)
     controls = new THREE.PointerLockControls(camera, document.body);
     document.body.addEventListener('click', () => {
-        controls.lock(); // Click to engage controls
+        if (window.innerWidth > 768) {
+            controls.lock(); // Click to engage controls (desktop only)
+        }
     });
 
-    controls.addEventListener('lock', () => {
-        console.log('Pointer locked');
-    });
+    // Mobile Movement Controls
+    if (window.innerWidth <= 768) {
+        document.body.addEventListener('touchstart', (e) => {
+            // Simple logic to move forward when tapping the screen
+            let touchX = e.touches[0].clientX;
+            if (touchX < window.innerWidth / 2) {
+                camera.position.x -= 0.1; // Move left
+            } else {
+                camera.position.x += 0.1; // Move right
+            }
+        });
+    }
 
-    controls.addEventListener('unlock', () => {
-        console.log('Pointer unlocked');
-    });
-
-    // Movement Variables
+    // Movement Variables for Desktop
     const moveSpeed = 0.1;
     const move = { forward: false, backward: false, left: false, right: false };
 
@@ -65,7 +75,7 @@ function init() {
     function animate() {
         requestAnimationFrame(animate);
 
-        // Movement Logic
+        // Movement Logic for Desktop
         if (controls.isLocked) {
             if (move.forward) controls.moveForward(moveSpeed);
             if (move.backward) controls.moveForward(-moveSpeed);
