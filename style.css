@@ -1,4 +1,3 @@
-/* Make the background pitch black and center the logo */
 body {
     margin: 0;
     padding: 0;
@@ -16,8 +15,8 @@ body {
 }
 
 .logo {
-    max-width: 30%;
-    max-height: 30%;
+    width: 60vw; /* Use viewport width to size the logo dynamically */
+    max-width: 300px; /* Ensure the logo doesn't get too big */
     filter: drop-shadow(0 0 20px #fff); /* Glowing effect */
     cursor: pointer; /* Pointer cursor to indicate it's clickable */
     transition: transform 0.3s ease;
@@ -29,7 +28,7 @@ body {
 
 .click-to-enter {
     color: #fff;
-    font-size: 1.5rem;
+    font-size: 4vw; /* Make the font size dynamic */
     text-transform: uppercase;
     filter: drop-shadow(0 0 10px #fff); /* Glowing effect */
     animation: pulse 1.5s infinite; /* Pulsing animation */
@@ -40,4 +39,15 @@ body {
     0% { opacity: 1; }
     50% { opacity: 0.7; }
     100% { opacity: 1; }
+}
+
+/* Mobile-Specific Styles */
+@media (max-width: 768px) {
+    .logo {
+        width: 80vw; /* Make the logo slightly larger on smaller screens */
+    }
+
+    .click-to-enter {
+        font-size: 6vw; /* Increase text size for better readability */
+    }
 }
