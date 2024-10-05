@@ -1,9 +1,29 @@
+@font-face {
+    font-family: 'CrushMetal';
+    src: url('fonts/Crush Metal.ttf') format('truetype');
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #000; /* Black background */
+    overflow: hidden; /* Prevent scrolling */
+    font-family: 'Arial', sans-serif; /* Default font */
+}
+
+.center-content {
+    text-align: center;
+}
+
 .logo {
     width: 60vw; /* Use viewport width to size the logo dynamically */
     max-width: 300px; /* Ensure the logo doesn't get too big */
     filter: drop-shadow(0 0 20px #fff); /* Glowing effect */
     cursor: pointer; /* Pointer cursor to indicate it's clickable */
-    transition: transform 0.3s ease;
     animation: rotateLogo 5s linear infinite; /* Add rotation animation */
 }
 
@@ -15,4 +35,27 @@
 
 .logo:hover {
     transform: scale(1.05); /* Slight grow effect on hover */
+}
+
+.click-to-enter {
+    color: #fff;
+    font-size: 4vw; /* Make the font size dynamic */
+    text-transform: uppercase;
+    filter: drop-shadow(0 0 10px #fff); /* Glowing effect */
+    animation: pulse 1.5s infinite; /* Pulsing animation */
+    font-family: 'CrushMetal', sans-serif; /* Use the custom font */
+}
+
+/* Pulsing animation for the text */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+/* Mobile-Specific Styles */
+@media (max-width: 768px) {
+    .click-to-enter {
+        font-size: 6vw; /* Increase text size for better readability */
+    }
 }
