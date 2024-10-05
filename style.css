@@ -2,11 +2,13 @@
 body {
     margin: 0;
     padding: 0;
-    height: 100vh; /* Full viewport height */
-    display: flex; /* Flexbox for centering */
-    align-items: center; /* Center vertically */
-    justify-content: center; /* Center horizontally */
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background-color: #000; /* Black background */
+    overflow: hidden; /* Prevent scrolling */
+    font-family: 'Arial', sans-serif;
 }
 
 .center-content {
@@ -14,7 +16,28 @@ body {
 }
 
 .logo {
-    max-width: 30%; /* Resize logo to 30% of the viewport width */
-    max-height: 30%; /* Resize logo to 30% of the viewport height */
-    object-fit: contain; /* Ensure the aspect ratio is maintained */
+    max-width: 30%;
+    max-height: 30%;
+    filter: drop-shadow(0 0 20px #fff); /* Glowing effect */
+    cursor: pointer; /* Pointer cursor to indicate it's clickable */
+    transition: transform 0.3s ease;
+}
+
+.logo:hover {
+    transform: scale(1.05); /* Slight grow effect on hover */
+}
+
+.click-to-enter {
+    color: #fff;
+    font-size: 1.5rem;
+    text-transform: uppercase;
+    filter: drop-shadow(0 0 10px #fff); /* Glowing effect */
+    animation: pulse 1.5s infinite; /* Pulsing animation */
+}
+
+/* Pulsing animation for the text */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
 }
