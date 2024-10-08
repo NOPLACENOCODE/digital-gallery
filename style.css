@@ -37,13 +37,13 @@ body {
     transform: scale(1.05); /* Slight grow effect on hover */
 }
 
-.click-to-enter {
+.coming soon {
     color: #fff;
     font-size: 2vw; /* Make the font size dynamic */
     text-transform: uppercase;
     filter: drop-shadow(0 0 5px #fff); /* Glowing effect */
     animation: pulse 0.5s infinite; /* Pulsing animation */
-    font-family: 'CrushMetal', sans-serif; /* Use the custom font */
+    font-family: 'Arial', sans-serif; 
 }
 
 /* Pulsing animation for the text */
