@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>noplace_notime — Objects</title>
+  <meta name="description" content="One-of-a-kind objects from noplace_notime." />
+  <meta name="theme-color" content="#ffffff" />
+
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css?v=178" />
+</head>
+<body class="subpage-body">
+  <a class="subpage-home" href="index.html" aria-label="Home">
+    <img src="assets/logo.png" alt="noplace_notime" />
+  </a>
+
+  <!-- Right-panel background — switches based on the active cart item -->
+  <div class="objects-bg" aria-hidden="true"></div>
+
+  <main class="subpage objects-page">
+    <section class="section objects-section">
+      <h2>Objects</h2>
+
+      <div class="objects-stage">
+        <div class="objects-figure" data-figure></div>
+
+        <div class="objects-cart" data-cart-empty>
+          <div class="objects-cart-bag">
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+              <path d="M5 7h14l-1.2 12.4a2 2 0 0 1-2 1.6H8.2a2 2 0 0 1-2-1.6L5 7z" />
+              <path d="M9 7V5a3 3 0 0 1 6 0v2" />
+            </svg>
+            <span class="objects-cart-count" hidden>0</span>
+          </div>
+          <ul class="cart-items"></ul>
+          <p class="cart-total"></p>
+          <button class="cart-checkout" type="button">Check Out</button>
+        </div>
+      </div>
+
+      <div class="objects-grid"></div>
+
+      <!-- Item detail view: replaces the grid in the left column when an
+           item is opened. Dude on the right stays fixed. -->
+      <section class="object-detail" hidden aria-hidden="true">
+        <div class="object-detail-gallery">
+          <img class="object-detail-main-image" alt="" />
+          <div class="object-detail-thumbs"></div>
+        </div>
+        <div class="object-detail-info">
+          <h3 class="object-detail-name"></h3>
+          <p class="object-detail-price"></p>
+          <p class="object-detail-description"></p>
+          <button class="object-detail-toggle" type="button">ADD TO CART</button>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <!-- Mobile-only floating cart button (top right) -->
+  <button class="cart-fab" type="button" aria-label="Open cart">
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+      <path d="M5 7h14l-1.2 12.4a2 2 0 0 1-2 1.6H8.2a2 2 0 0 1-2-1.6L5 7z" />
+      <path d="M9 7V5a3 3 0 0 1 6 0v2" />
+    </svg>
+    <span class="cart-fab-count" hidden>0</span>
+  </button>
+
+  <!-- Mobile-only fullscreen cart modal -->
+  <div class="cart-modal" aria-hidden="true" role="dialog" aria-label="Your cart">
+    <button class="cart-modal-close" type="button" aria-label="Close">×</button>
+    <div class="cart-modal-body">
+      <div class="cart-modal-top">
+        <div class="cart-modal-figure" data-figure></div>
+        <div class="cart-modal-summary">
+          <ul class="cart-items cart-modal-items"></ul>
+          <p class="cart-total cart-modal-total"></p>
+        </div>
+      </div>
+      <button class="cart-checkout cart-modal-checkout" type="button">GO TO CHECKOUT</button>
+
+      <div class="cart-modal-more">
+        <div class="cart-modal-more-scroller"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="audio.js?v=167"></script>
+  <script src="objects.js?v=187"></script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>noplace_notime — Artworks</title>
+  <meta name="description" content="Original paintings by noplace_notime." />
+  <meta name="theme-color" content="#ffffff" />
+
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css?v=181" />
+</head>
+<body class="subpage-body">
+  <a class="subpage-home" href="index.html" aria-label="Home">
+    <img src="assets/logo.png" alt="noplace_notime" />
+  </a>
+
+  <main class="subpage">
+    <section id="artwork" class="section">
+      <h2>Artworks</h2>
+      <div class="work-grid" role="list"></div>
+    </section>
+  </main>
+
+  <div class="work-modal" aria-hidden="true" role="dialog" aria-label="Artwork detail">
+    <button class="work-modal-close" aria-label="Close">×</button>
+    <div class="work-modal-content">
+      <div class="work-modal-scroller"></div>
+      <div class="work-modal-dots" aria-hidden="true"></div>
+      <aside class="work-modal-info">
+        <h3 class="work-modal-title"></h3>
+        <p class="work-modal-meta"></p>
+        <div class="work-modal-thumbs"></div>
+        <a class="work-modal-inquire" href="#" rel="noopener">Inquire</a>
+      </aside>
+    </div>
+  </div>
+
+  <script src="script.js?v=160"></script>
+</body>
+</html>

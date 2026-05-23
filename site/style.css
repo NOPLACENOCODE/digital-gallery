@@ -1,0 +1,1734 @@
+:root {
+  --bg: #ffffff;
+  --ink: #1a1a18;
+  --ink-muted: #6c6e69;
+  --coin-size: min(13vw, 56px);
+  --coin-depth: 4px;
+  --spin-duration: 5s;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+img { display: block; max-width: 100%; }
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Hero ---------- */
+
+.hero {
+  min-height: 100vh;
+  min-height: 100lvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(28px, 5vh, 48px);
+  padding: 32px 24px 48px;
+}
+
+.coin-stage {
+  perspective: 1200px;
+  perspective-origin: 50% 50%;
+  width: var(--coin-size);
+  aspect-ratio: 3 / 4;
+  display: grid;
+  place-items: center;
+}
+
+.coin {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  animation: spin var(--spin-duration) linear infinite;
+  will-change: transform;
+  /* Skip the iOS double-tap-to-zoom delay so single taps fire immediately. */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+.face img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.face-front {
+  transform: translateZ(var(--coin-depth)) rotateY(0deg);
+}
+
+.face-back {
+  transform: translateZ(calc(var(--coin-depth) * -1)) rotateY(180deg);
+}
+
+/* mirror the back-face image so the coin reads as mirrored when viewed from behind */
+.face-back img {
+  transform: scaleX(-1);
+}
+
+/* black silhouette layers between front and back to fake coin thickness.
+   subtle blur smears the discrete planes into a continuous edge when seen side-on,
+   while the sharp front/back faces sit on top so detail isn't lost. */
+.depth {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: brightness(0) blur(0.6px);
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Forward set: visible during the front half of the rotation.
+   --d goes from 30..-30; multiplier 0.133 spreads layers across ±3.99px,
+   meeting the front/back faces (at ±4px) with no visible gap. */
+.depth-fwd {
+  transform: translateZ(calc(var(--d) * 0.133px));
+}
+
+/* Backward set: visible during the back half of the rotation. scaleX(-1) so silhouettes match the mirrored back face */
+.depth-bwd {
+  transform: translateZ(calc(var(--d) * 0.133px)) rotateY(180deg) scaleX(-1);
+}
+
+@keyframes spin {
+  from { transform: rotateY(0deg); }
+  to   { transform: rotateY(360deg); }
+}
+
+/* Edge mask: solid black rectangles facing camera exactly at the edge-on
+   moments (coin rotation 90° = 25% of loop, 270° = 75%). Each panel is
+   rotated so it only faces the camera during its window. Opacity keyframes
+   keep them invisible the rest of the time. */
+.face-edge {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: calc(var(--coin-depth) * 2);
+  height: 100%;
+  margin-left: calc(var(--coin-depth) * -1);
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.face-edge-1 {
+  transform: rotateY(-90deg);
+  animation: showEdge1 var(--spin-duration) linear infinite;
+}
+
+.face-edge-2 {
+  transform: rotateY(90deg);
+  animation: showEdge2 var(--spin-duration) linear infinite;
+}
+
+@keyframes showEdge1 {
+  0%, 23%   { opacity: 0; }
+  24%, 26%  { opacity: 1; }
+  27%, 100% { opacity: 0; }
+}
+
+@keyframes showEdge2 {
+  0%, 73%   { opacity: 0; }
+  74%, 76%  { opacity: 1; }
+  77%, 100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coin { animation: none; }
+  .face-edge { animation: none; }
+}
+
+/* ---------- Menu ---------- */
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  font-size: 14px;
+  letter-spacing: 0.34em;
+  font-weight: 500;
+}
+
+.menu a {
+  color: var(--ink);
+  text-decoration: none;
+  padding: 8px 12px;
+  /* compensate for trailing letter-spacing so words read as centered */
+  text-indent: 0.34em;
+  transition: color 200ms ease, letter-spacing 240ms ease, text-indent 240ms ease;
+}
+
+.menu a:hover,
+.menu a:focus-visible {
+  text-indent: 0.42em;
+}
+
+.menu a:hover,
+.menu a:focus-visible {
+  color: var(--ink-muted);
+  letter-spacing: 0.42em;
+  outline: none;
+}
+
+/* ---------- Topbar ---------- */
+
+.topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  justify-content: center;
+  padding: 12px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-12px);
+  transition: opacity 280ms ease, transform 280ms ease;
+  z-index: 50;
+  background: linear-gradient(to bottom, var(--bg) 60%, transparent);
+}
+
+.topbar.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.topbar-logo {
+  background: none;
+  border: 0;
+  padding: 6px;
+  cursor: pointer;
+  width: 40px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+}
+
+.topbar-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* ---------- Subpage layout (Store, Info) ---------- */
+
+.subpage-body { background: var(--bg); }
+
+.subpage-home {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  z-index: 50;
+}
+
+.subpage-home img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.subpage { padding-top: 44px; }
+
+/* ---------- Sections ---------- */
+
+.section {
+  min-height: 80vh;
+  padding: 55px 24px 80px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* The artworks page uses the full page width — the grid spreads edge-to-edge
+   instead of being centered in a narrow column. */
+.subpage #artwork {
+  max-width: none;
+}
+
+.section h2 {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  margin: 0 0 24px;
+}
+
+.muted { color: var(--ink-muted); font-size: 16px; }
+
+/* ---------- Home showcase (2x-zoomed painting strips) ----------
+   Each strip keeps the painting's aspect ratio (set inline via aspect-ratio)
+   but shows only one half of the image at 2x scale. The img is sized 200%
+   wide × 200% tall and translated so the chosen half is centered vertically. */
+
+.showcase {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.showcase-zoom {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.showcase-zoom img {
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  object-fit: cover;
+  top: -50%;
+  display: block;
+}
+
+.showcase-zoom.zoom-left img { left: 0; }
+.showcase-zoom.zoom-right img { left: -100%; }
+
+/* ---------- Artwork grid ----------
+   Square tiles, white background. Each painting is shown via object-fit:
+   contain so non-square works are letterboxed inside the same square frame. */
+
+.work-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px 8px;
+  margin-top: 32px;
+}
+
+.work-tile {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: center;
+  font-family: inherit;
+  color: var(--ink);
+}
+
+.work-tile-frame {
+  position: relative;
+  background:
+    radial-gradient(circle at top left, rgba(0, 0, 0, 0.04), transparent 35%),
+    radial-gradient(circle at top right, rgba(0, 0, 0, 0.04), transparent 35%),
+    radial-gradient(circle at bottom left, rgba(0, 0, 0, 0.04), transparent 35%),
+    radial-gradient(circle at bottom right, rgba(0, 0, 0, 0.04), transparent 35%),
+    #ededed;
+  aspect-ratio: 1;
+  overflow: hidden;
+  padding: 6%;
+  box-sizing: border-box;
+  transition: background-color 280ms ease;
+}
+
+.work-tile-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.work-tile-title {
+  margin-top: 14px;
+  font-family: 'Amiri', Georgia, serif;
+  font-size: 15px;
+  letter-spacing: 0.16em;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.work-tile-price {
+  margin-top: 6px;
+  font-family: 'Amiri', Georgia, serif;
+  font-size: 14px;
+  color: var(--ink-muted);
+  letter-spacing: 0.04em;
+}
+
+.work-tile:hover .work-tile-frame,
+.work-tile:focus-visible .work-tile-frame {
+  background-color: #e0e0e0;
+}
+
+.work-tile:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+}
+
+/* ---------- Artwork modal ---------- */
+
+body.modal-open { overflow: hidden; }
+
+.work-modal {
+  /* No white top bar — grey scroller extends edge-to-edge of the viewport
+     and the painting centers vertically. The X close button floats over
+     the grey area at top-right. */
+  --modal-topbar: 0px;
+  position: fixed;
+  inset: 0;
+  height: 100vh;
+  height: 100dvh;
+  background: #ffffff;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 240ms ease;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.work-modal.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Fixed white top bar that holds the close button. Sits above the grey
+   scroller so the X always has a clean white background to live in. Uses
+   `position: fixed` so it stays pinned even when the modal page scrolls. */
+.work-modal.is-open::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--modal-topbar);
+  background: #fff;
+  z-index: 2;
+}
+
+.work-modal-close {
+  position: fixed;
+  top: 6px;
+  right: 8px;
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--ink);
+  z-index: 3;
+  font-family: inherit;
+}
+
+.work-modal-content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100%;
+  padding-top: var(--modal-topbar);
+  box-sizing: border-box;
+  position: relative;
+  z-index: 0;
+}
+
+.work-modal-scroller {
+  flex: 0 0 auto;
+  width: 100%;
+  /* Mobile default (vertical paintings): scroller is tall, only a sliver
+     of the info card peeks below. */
+  height: calc(100dvh - var(--modal-topbar) - 60px);
+  overflow-x: auto;
+  overflow-y: hidden;
+  display: flex;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  background: #ededed;
+}
+
+.work-modal-scroller::-webkit-scrollbar { display: none; }
+
+/* Mobile only: for horizontal works, shrink the slide area so the info
+   card (title + meta + thumbnails + Inquire) fits on the initial screen. */
+@media (max-width: 719px) {
+  /* White top bar on mobile, but only for horizontal works (where the
+     painting area is short and the X needs a clean strip to sit on).
+     Vertical works keep the grey area extending edge-to-edge. */
+  .work-modal:has(.work-modal-scroller.is-horizontal-work) {
+    --modal-topbar: 56px;
+  }
+
+  .work-modal-scroller.is-horizontal-work {
+    height: calc(100dvh - var(--modal-topbar) - 300px);
+  }
+
+  /* And tighten the slide's vertical padding so the painting still has room
+     to breathe within the now-shorter slide. */
+  .work-slide.is-horizontal {
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+
+  /* For horizontal works on mobile, the thumbnail strip is already visible
+     in the info card — the pagination dots would just sit on top of it. Hide. */
+  .work-modal:has(.work-modal-scroller.is-horizontal-work) .work-modal-dots {
+    display: none;
+  }
+
+}
+
+.work-slide {
+  flex: 0 0 100%;
+  height: 100%;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(56px, 9vh, 96px) 24px;
+  box-sizing: border-box;
+}
+
+/* Vertical paintings: tighter padding so they fit, plus a max-height cap
+   to guarantee a sliver of grey above/below even when aspect matches exactly. */
+.work-slide.is-vertical {
+  padding: 20px 24px;
+}
+
+/* Natural-sized image, capped to fit the slide. Because the element itself
+   is sized to the image bounds (not 100% × 100%), `place-items: center` on
+   the slide centers the *visible image* — no object-fit math, no asymmetry. */
+.work-slide img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.18));
+}
+
+.work-slide.is-vertical img {
+  max-height: 88%;
+}
+
+/* fit: 'tight' — image fills slide height, grey only on left/right.
+   Used for alternate-view photos where you want the painting as large as
+   possible without the framed presentation grey margin. */
+.work-slide.fit-tight {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.work-slide.fit-tight img {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* fit: 'cover' — image fills the whole slide; no grey wall, no shadow */
+.work-slide.fit-cover {
+  padding: 0;
+}
+
+.work-slide.fit-cover img {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: cover;
+  filter: none;
+}
+
+/* While the page is pinch-zoomed, kill snap + overflow so the user can
+   pan freely inside the zoomed image without skipping to the next slide. */
+.work-modal-scroller.is-zoomed {
+  scroll-snap-type: none;
+  overflow: hidden;
+}
+
+.work-slide.placeholder::after {
+  content: '';
+  width: min(80vh, 90vw);
+  aspect-ratio: 1;
+  background-image: linear-gradient(135deg, #ece8e0 0%, #d8d4cc 100%);
+}
+
+.work-modal-info {
+  flex: 1 0 auto;
+  background: #fff;
+  padding: 16px 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* Pagination dots that hint the painting has multiple views.
+   Sit at the bottom of the painting area, just inside the grey frame. */
+.work-modal-dots {
+  position: absolute;
+  top: calc(100dvh - 84px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.work-modal-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.10);
+  transition: background 200ms ease, transform 200ms ease;
+}
+
+.work-modal-dots span.is-active {
+  background: rgba(0, 0, 0, 0.30);
+}
+
+.work-modal-inquire {
+  align-self: stretch;
+  margin-top: 14px;
+  padding: 14px 24px;
+  background: var(--ink);
+  color: #fff;
+  text-align: center;
+  text-decoration: none;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  transition: opacity 160ms ease;
+}
+
+.work-modal-inquire:hover,
+.work-modal-inquire:focus-visible {
+  opacity: 0.85;
+}
+
+.work-modal-inquire.is-soldout,
+.work-modal-inquire.is-soldout:hover,
+.work-modal-inquire.is-soldout:focus-visible {
+  background: #ededed;
+  color: #b91c1c;
+  cursor: not-allowed;
+  opacity: 1;
+  pointer-events: none;
+}
+
+.work-modal-title {
+  font-family: 'Amiri', Georgia, serif;
+  font-weight: 400;
+  font-size: 20px;
+  letter-spacing: 0.04em;
+  margin: 0;
+  line-height: 1.15;
+}
+
+.work-modal-meta {
+  margin: 0;
+  font-family: 'Amiri', Georgia, serif;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--ink-muted);
+  white-space: pre-line;
+}
+
+.work-modal-thumbs {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.work-thumb {
+  appearance: none;
+  background: #ededed;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+  width: 100%;
+  /* padding-top trick: forces a 1:1 box independent of grid stretch */
+  padding-top: 100%;
+  overflow: hidden;
+  transition: outline-color 200ms ease, opacity 200ms ease;
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  opacity: 0.7;
+}
+
+.work-thumb img {
+  position: absolute;
+  /* 4px inset gives an equal grey frame on all four sides */
+  inset: 4px;
+  width: calc(100% - 8px);
+  height: calc(100% - 8px);
+  object-fit: cover;
+  display: block;
+}
+
+.work-thumb:hover { opacity: 1; }
+
+.work-thumb.is-active {
+  opacity: 1;
+  outline-color: var(--ink);
+}
+
+/* ---------- Desktop ---------- */
+
+@media (min-width: 720px) {
+  :root {
+    --coin-size: min(7vw, 76px);
+    --coin-depth: 5px;
+  }
+
+  .work-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  /* On desktop the modal fits in the viewport — info aside scrolls
+     internally if needed, so disable page-level scroll. */
+  .work-modal {
+    overflow-y: hidden;
+  }
+
+  .work-modal-content {
+    flex-direction: row;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .work-modal-scroller {
+    flex: 1 1 auto;
+    height: 100%;
+  }
+
+  .work-slide {
+    padding: clamp(72px, 10vh, 120px) 56px;
+  }
+
+  .work-slide.is-vertical {
+    padding: 32px 56px;
+  }
+
+  /* On desktop, zoom-in images are framed like any other image (contained
+     with grey margins) — `cover` looked cropped/awkward in wide viewports.
+     Mobile keeps the immersive full-bleed cover behavior. */
+  .work-slide.fit-cover {
+    padding: clamp(72px, 10vh, 120px) 56px;
+  }
+
+  .work-slide.fit-cover img {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.18));
+  }
+
+  .work-modal-info {
+    flex: 0 0 320px;
+    border-top: 0;
+    border-left: 1px solid rgba(0, 0, 0, 0.06);
+    padding: 64px 32px 32px;
+    gap: 18px;
+    overflow-y: auto;
+  }
+
+  /* On desktop the thumbnail aside makes navigation explicit — no dots. */
+  .work-modal-dots {
+    display: none;
+  }
+
+  .work-modal-title {
+    font-size: 26px;
+  }
+
+  .work-modal-thumbs {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+  }
+}
+
+/* ===========================================================
+   Info page — centered title + short bio.
+   =========================================================== */
+
+.info-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 70vh;
+  gap: 16px;
+}
+
+.info-title {
+  font-family: 'Amiri', Georgia, serif;
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.info-body {
+  font-family: 'Amiri', Georgia, serif;
+  font-size: 17px;
+  line-height: 1.55;
+  max-width: 380px;
+  margin: 0;
+  color: var(--ink);
+}
+
+.info-contact {
+  margin: 64px 0 0;
+  padding: 0;
+  font-family: 'Amiri', Georgia, serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.info-contact dt {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin-bottom: 8px;
+}
+
+.info-contact dd {
+  margin: 0;
+}
+
+.info-contact a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  transition: opacity 160ms ease;
+}
+
+.info-contact a:hover { opacity: 0.6; }
+
+@media (min-width: 720px) {
+  .info-title { font-size: 36px; }
+  .info-body { font-size: 19px; max-width: 440px; }
+  .info-contact { font-size: 17px; margin-top: 80px; }
+}
+
+/* ===========================================================
+   Objects page — store with a figure that "wears" what's in the cart.
+   =========================================================== */
+
+/* Objects page uses the full page width — grid spreads edge-to-edge. */
+.objects-page .objects-section { max-width: none; }
+
+.objects-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 40vh;
+  padding-top: 0;
+}
+
+/* ---------- Item detail view ---------- */
+
+/* `display: flex/grid` on elements above would otherwise win over the
+   default `[hidden] { display: none }`, so we force it here. */
+[hidden] { display: none !important; }
+
+.object-detail {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 24px;
+}
+
+/* Two-column layout (desktop): image + thumbs on the left, info on the right.
+   The two are kept close to each other and the pair is centered in the panel.
+   Stacks vertically on narrow widths. */
+.object-detail-gallery {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.object-detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* One main image, with a thumbnail strip below — same pattern as the
+   artwork modal. Clicking a thumb swaps the main image src. */
+.object-detail-main-image {
+  width: 100%;
+  max-width: 560px;
+  background: #ededed;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.object-detail-main-image.is-cover {
+  object-fit: cover;
+  background: transparent;
+}
+
+.object-detail-thumbs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.object-detail-thumb {
+  appearance: none;
+  width: 56px;
+  height: 56px;
+  background: #ededed;
+  border: 0;
+  padding: 4px;
+  margin: 0;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  opacity: 0.7;
+  transition: outline-color 200ms ease, opacity 200ms ease;
+}
+
+.object-detail-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  display: block;
+}
+
+.object-detail-thumb:hover { opacity: 1; }
+
+.object-detail-thumb.is-active {
+  opacity: 1;
+  outline-color: var(--ink);
+}
+
+.object-detail-name {
+  font-family: 'Amiri', Georgia, serif;
+  font-weight: 400;
+  font-size: 36px;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.object-detail-price {
+  font-family: 'Amiri', Georgia, serif;
+  font-size: 20px;
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+.object-detail-description {
+  margin: 4px 0 0;
+  font-family: 'Amiri', Georgia, serif;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.object-detail-toggle {
+  /* Same uppercase pill as the grid tiles, sized up a touch for the detail
+     view. `margin-top: auto` pushes it to the bottom of the info column so
+     it lines up with the bottom of the image. */
+  align-self: flex-start;
+  margin-top: auto;
+  padding: 12px 22px;
+  background: var(--ink);
+  color: #fff;
+  border: 0;
+  cursor: pointer;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  transition: color 200ms ease, opacity 160ms ease;
+}
+
+.object-detail-toggle:hover,
+.object-detail-toggle:focus-visible { opacity: 0.9; }
+
+.object-detail-toggle.is-added {
+  background: #ededed;
+  color: var(--ink);
+}
+
+.object-detail-toggle.is-soldout,
+.object-detail-toggle.is-soldout:disabled {
+  background: #ededed;
+  color: #b91c1c;
+  opacity: 1;
+}
+
+/* ---------- Mobile cart (fab + fullscreen modal) ----------
+   Desktop hides these by default (the inline stage + dude on the right
+   handles cart status). On mobile the inline stage is hidden and a small
+   bag icon top-right opens the cart modal with the dude + items + GO
+   TO CHECKOUT button. */
+
+.cart-fab,
+.cart-modal { display: none; }
+
+@media (max-width: 719px) {
+  /* Hide the inline dude + cart UI on mobile */
+  .objects-stage { display: none; }
+
+  /* Floating cart bag at top-right of the viewport */
+  .cart-fab {
+    display: inline-flex;
+    position: fixed;
+    top: 12px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+    background: none;
+    border: 0;
+    padding: 6px;
+    cursor: pointer;
+    color: var(--ink);
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+  }
+
+  .cart-fab-count {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: #fff;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 18px;
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  /* Fullscreen cart modal */
+  .cart-modal {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    height: 100vh;
+    height: 100dvh;
+    background: #fff;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 240ms ease;
+    flex-direction: column;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cart-modal.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .cart-modal-close {
+    position: fixed;
+    top: 6px;
+    right: 8px;
+    width: 44px;
+    height: 44px;
+    background: none;
+    border: 0;
+    cursor: pointer;
+    font-size: 28px;
+    color: var(--ink);
+    z-index: 110;
+    font-family: inherit;
+  }
+
+  .cart-modal-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 48px 24px 16px;
+    flex: 1 0 auto;
+  }
+
+  /* Top row: dude flush to the left edge of the body, items list flowing
+     on the right next to him. */
+  .cart-modal-top {
+    align-self: stretch;
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    width: 100%;
+  }
+
+  .cart-modal .cart-modal-figure {
+    position: relative;
+    flex: 0 0 auto;
+    width: 200px;
+    aspect-ratio: 125 / 234;
+    /* Push past the body's 24px left padding so the dude truly sits at
+       the left edge of the viewport. */
+    margin-left: -16px;
+  }
+
+  .cart-modal-summary {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    /* Slight overlap into the dude PNG's right whitespace, but not so much
+       that the text covers his hand. */
+    margin-left: -8px;
+  }
+
+  /* Two-row layout per cart line: qty + name on top, price below, remove
+     button anchored on the right across both rows. */
+  .cart-modal-summary .cart-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+      "qty name remove"
+      "price price remove";
+    column-gap: 6px;
+    row-gap: 0;
+    align-items: center;
+  }
+
+  .cart-modal-summary .cart-item-qty { grid-area: qty; }
+  .cart-modal-summary .cart-item-name { grid-area: name; flex: 0 0 auto; }
+  .cart-modal-summary .cart-item-sep { display: none; }
+  .cart-modal-summary .cart-item-price {
+    grid-area: price;
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+  .cart-modal-summary .cart-item-remove { grid-area: remove; }
+
+  /* The reused checkout button keeps a column width */
+  .cart-modal-checkout {
+    width: 100%;
+    max-width: 360px;
+    margin-top: 0; /* don't auto-push to bottom — content follows below */
+  }
+
+  /* Compact items inside the narrow right column */
+  .cart-modal-summary .cart-item {
+    font-size: 14px;
+  }
+
+  .cart-modal-summary .cart-total {
+    font-size: 16px;
+    margin-top: 4px;
+  }
+
+  /* Horizontal "more objects" gallery under the checkout button.
+     Lets users keep adding without leaving the cart. */
+  .cart-modal-more {
+    width: 100%;
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .cart-modal-more-label {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-weight: 500;
+    font-size: 12px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin: 0;
+    padding: 0 24px;
+  }
+
+  .cart-modal-more-scroller {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 0 24px 8px;
+    scroll-snap-type: x proximity;
+  }
+
+  .cart-modal-more-scroller::-webkit-scrollbar { display: none; }
+
+  /* Mini-tile inside the modal scroller — fixed-width tile with the
+     image at the previous (larger) size, only the typography shrinks. */
+  .cart-modal-more-scroller .object-tile {
+    flex: 0 0 140px;
+    scroll-snap-align: start;
+  }
+
+  .cart-modal-more-scroller .object-tile-name { font-size: 11px; }
+  .cart-modal-more-scroller .object-tile-price { font-size: 10px; }
+  .cart-modal-more-scroller .object-toggle {
+    padding: 4px 8px;
+    font-size: 9px;
+    letter-spacing: 0.16em;
+  }
+}
+
+/* ---------- Right-panel background ----------
+   Fixed full-height element behind the dude (desktop only). Mood image
+   fades in when a cart item with a `background` field is active. Hidden
+   on mobile because the dude isn't in a dedicated right panel there —
+   it would just cover the whole page. */
+
+.objects-bg {
+  display: none;
+}
+
+@media (min-width: 720px) {
+  .objects-bg {
+    display: block;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    /* Match the reserved right-column area: stage width + the section's
+       padding-right gap, plus the 24px outer offset. */
+    width: calc(min(38vw, 520px) + 48px);
+    background-size: cover;
+    background-position: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 320ms ease;
+    z-index: 30;
+  }
+
+  .objects-bg.is-active {
+    opacity: 1;
+  }
+}
+
+/* ---------- Inline cart (bag icon + summary) ---------- */
+
+.objects-cart {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 32px;
+  width: 100%;
+  max-width: 360px;
+}
+
+/* When the cart is empty, hide the items list, total, and checkout —
+   leave only the bag icon as a subtle indicator. */
+.objects-cart[data-cart-empty] .cart-items,
+.objects-cart[data-cart-empty] .cart-total,
+.objects-cart[data-cart-empty] .cart-checkout {
+  display: none;
+}
+
+.objects-cart-bag {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+}
+
+.objects-cart-count {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* ---------- The figure (placeholder = inline SVG; real = drop a PNG) ---------- */
+
+.objects-figure,
+.cart-modal-figure {
+  position: relative;
+  width: 320px;
+  aspect-ratio: 125 / 234;
+  color: var(--ink);
+}
+
+.objects-figure-base {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* Path B: tell the browser to stop smoothing on upscale, so each source
+     pixel becomes a clean square block — classic chunky pixel-art look. */
+  image-rendering: pixelated;
+  image-rendering: crisp-edges; /* fallback for older browsers */
+}
+
+.objects-figure-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Emoji-positioned placeholder layer (until real PNG layer drops in). */
+.objects-figure-layer-emoji {
+  inset: auto;
+  width: auto;
+  height: auto;
+  font-size: 36px;
+  line-height: 1;
+  transform: translate(-50%, -50%);
+}
+
+/* ---------- Product grid ---------- */
+
+.objects-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  /* row gap × column gap — items touch horizontally, breathe vertically */
+  gap: 32px 0;
+  margin-top: 24px;
+}
+
+.object-tile {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.object-tile-frame {
+  background: #ededed;
+  aspect-ratio: 425 / 531;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.object-tile-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.object-tile-frame.is-cover {
+  background: transparent;
+}
+
+.object-tile-frame.is-cover img {
+  object-fit: cover;
+}
+
+.object-tile-frame {
+  position: relative;
+}
+
+.sold-badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  padding: 5px 10px;
+  background: #fff;
+  color: #b91c1c;
+  font-family: 'Amiri', Georgia, serif;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.18em;
+  border: 1px solid #b91c1c;
+  pointer-events: none;
+  user-select: none;
+}
+
+.sold-badge-inline {
+  position: static;
+  display: inline-block;
+  margin: 4px 0 8px;
+}
+
+.sold-badge-inline[hidden] {
+  display: none;
+}
+
+.object-tile-frame .sold-badge,
+.work-tile-frame .sold-badge {
+  padding: 5px 8px 3px;
+  border: 0;
+  background: #fff;
+  line-height: 1;
+}
+
+.object-toggle:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+
+.object-tile-placeholder {
+  font-size: 56px;
+  line-height: 1;
+}
+
+.object-tile-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 0 6px;
+}
+
+.object-tile-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: 'Amiri', Georgia, serif;
+  min-width: 0;
+}
+
+.object-tile-name { font-size: 15px; line-height: 1.2; }
+.object-tile-price { font-size: 13px; color: var(--ink-muted); line-height: 1.2; }
+
+.object-toggle {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  background: var(--ink);
+  color: #fff;
+  border: 0;
+  cursor: pointer;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  transition: color 200ms ease, opacity 160ms ease;
+}
+
+.object-toggle:hover,
+.object-toggle:focus-visible { opacity: 0.9; }
+
+/* "REMOVE" state — flipped: grey background with black text for clearer
+   contrast against the default ADD button. */
+.object-toggle.is-added {
+  background: #ededed;
+  color: var(--ink);
+}
+
+/* ---------- Cart modal ---------- */
+
+.cart-modal {
+  position: fixed;
+  inset: 0;
+  height: 100vh;
+  height: 100dvh;
+  background: #ffffff;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 240ms ease;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cart-modal.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.cart-modal-close {
+  position: fixed;
+  top: 6px;
+  right: 8px;
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--ink);
+  z-index: 3;
+  font-family: inherit;
+}
+
+.cart-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 64px 24px 32px;
+  align-items: center;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+.cart-modal-figure { flex: 0 0 auto; }
+
+.cart-modal-summary {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cart-modal-title {
+  margin: 0 0 4px;
+  font-family: 'Amiri', Georgia, serif;
+  font-weight: 400;
+  font-size: 20px;
+}
+
+.cart-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cart-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: 'Amiri', Georgia, serif;
+  font-size: 16px;
+}
+
+.cart-item-name { color: var(--ink); flex: 1 1 auto; }
+.cart-item-qty { color: var(--ink); font-variant-numeric: tabular-nums; }
+.cart-item-sep { color: var(--ink-muted); }
+.cart-item-price { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* Small minus button on each cart line — quick "remove one" without
+   scrolling back to the items grid. */
+.cart-item-remove {
+  appearance: none;
+  background: #ededed;
+  border: 0;
+  margin-left: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 160ms ease;
+}
+
+.cart-item-remove:hover,
+.cart-item-remove:focus-visible {
+  background: #d8d8d8;
+  outline: none;
+}
+
+.cart-total {
+  margin: 12px 0 0;
+  font-family: 'Amiri', Georgia, serif;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.cart-checkout {
+  margin-top: 20px;
+  padding: 10px 24px;
+  background: var(--ink);
+  color: #fff;
+  border: 0;
+  cursor: pointer;
+  font-family: 'Amiri', Georgia, serif;
+  font-size: 18px;
+  border-radius: 0;
+  transition: opacity 160ms ease;
+  width: 100%;
+}
+
+.cart-checkout:hover,
+.cart-checkout:focus-visible { opacity: 0.9; }
+
+.cart-checkout:disabled { opacity: 0.3; cursor: default; }
+
+/* ---------- Desktop ---------- */
+
+@media (min-width: 720px) {
+  /* Desktop: items grid flows on the left, dude + cart truly fixed on the right.
+     Section uses block flow with right-padding reserved so items never run
+     under the dude. The stage is `position: fixed` (not sticky) so it doesn't
+     budge — including no drift when scrolling past the top or on overscroll. */
+  .objects-page .objects-section {
+    display: block;
+    padding-right: calc(min(38vw, 520px) + 48px);
+  }
+
+  .objects-stage {
+    position: fixed;
+    top: 160px;
+    right: 24px;
+    width: min(38vw, 520px);
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    z-index: 40;
+  }
+
+  /* When the cart has any items, give the cart container enough vertical
+     room so the Check Out button drops to roughly line up with the detail
+     page's ADD button. More items → cart grows past the min and Check Out
+     naturally sits lower. */
+  .objects-cart {
+    min-height: 240px;
+  }
+  .cart-checkout {
+    margin-top: auto;
+  }
+
+  .objects-figure,
+  .cart-modal-figure {
+    width: 100%;
+    /* After cropping the dude PNG's empty margins (300→125 wide), the same
+       display width shows a much larger visible figure. 260px ≈ 1.3× the
+       previous visible-figure size. */
+    max-width: 260px;
+  }
+
+  .objects-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 48px 0;
+    margin-top: 24px;
+  }
+
+  /* Item detail: image gallery + info pair, kept close to each other and
+     centered as a unit in the left panel. ADD button drops to the bottom of
+     the info column, so it lines up with the bottom of the image. */
+  .object-detail {
+    margin-top: 64px;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: center;
+    gap: 32px;
+  }
+
+  .object-detail-gallery {
+    flex: 0 0 auto;
+    width: 480px;
+  }
+
+  .object-detail-info {
+    flex: 0 1 420px;
+    min-width: 0;
+  }
+
+  .objects-figure-layer-emoji { font-size: 44px; }
+
+  .cart-modal-content {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 64px;
+    padding: 80px 56px 56px;
+  }
+
+  .cart-modal-summary { max-width: 360px; }
+}

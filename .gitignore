@@ -1,0 +1,14 @@
+# Raw source originals (HEIC/JPG straight off the camera).
+# Big — and we don't need them in the deployable repo.
+artwork photos/
+photos dude/
+photos for site/
+photos objects/
+random/
+
+# Intermediate derivatives sometimes generated next to originals.
+*_fotos_extra_webp/
+
+# OS junk
+.DS_Store
+Thumbs.db
