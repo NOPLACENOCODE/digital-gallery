@@ -21,8 +21,21 @@ up this project on a fresh machine. Read it once and you're caught up.
 4. **Info** (`info.html`) — currently just "Coming soon".
 
 The whole thing is **vanilla HTML/CSS/JS** served as static files. No build
-step, no framework, no backend. Easiest to deploy to Vercel/Netlify/GitHub
-Pages when ready.
+step, no framework, no backend.
+
+### Current state of the world (as of 2026-05-23)
+
+- **Source of truth:** GitHub repo at https://github.com/NOPLACENOCODE/digital-gallery
+  (branch `main`).
+- **Hosting:** Cloudflare Pages, project name `noplacenotime`. Preview URL:
+  https://noplacenotime.pages.dev. Deploys auto-trigger on every push to `main`
+  and complete in ~30s.
+- **Custom domain:** `noplacenotime.com`. Registered at GoDaddy. DNS was
+  migrated from GoDaddy's default nameservers to Cloudflare (free DNS); the
+  nameserver change was saved on 2026-05-23 and was propagating at handoff
+  time. Once Cloudflare detects the change, it auto-issues SSL and the apex
+  + `www` resolve to the Pages project. Old site (GitHub Pages from the
+  same repo's previous content) keeps serving until propagation finishes.
 
 ---
 
@@ -314,10 +327,15 @@ layers.
 
 ## Open TODOs
 
+- **DNS propagation** — confirm `https://noplacenotime.com` resolves to
+  Cloudflare Pages (cert visible, lock icon in browser). Cloudflare will
+  email when it detects the GoDaddy nameserver change. If it doesn't
+  resolve after 24h, check Cloudflare dashboard "Overview" — the domain
+  should say **Active**.
 - **Info page** — still "Coming soon".
-- **Deployment** — see "Going live" section below. Domain `noplacenotime.com`
-  is registered (registrar unknown — run `whois noplacenotime.com` to find
-  out) but not yet pointed at the new site.
+- **Red Portal dimensions + price** — currently `width: 30, height: 40` and
+  `price: '€500'` in `script.js`. Width/height were guessed when adding
+  the entry — Mattia should confirm and correct.
 - **Mobile cart** — on mobile the cart shows in the same column as the
   figure (vertical stack: dude → cart bag → items → total → checkout). Works
   but could be a modal again if it gets cluttered.
@@ -373,36 +391,21 @@ im.rotate(-90, expand=True).save('foo.webp', 'WEBP', quality=82, method=6)
 
 ---
 
-## Going live (deployment)
+## Deployment (already wired)
 
-The site is **static** (no backend, no database, no build step). Deployment
-is trivial. Recommended host: **Cloudflare Pages** (free, fast CDN, free
-DNS if you move nameservers to Cloudflare). Vercel / Netlify / GitHub Pages
-all work too.
+The site is **static** (no backend, no database, no build step) and is
+deployed on **Cloudflare Pages**, project `noplacenotime`, building from
+the `main` branch of https://github.com/NOPLACENOCODE/digital-gallery.
 
-### One-time setup
+Build settings in Cloudflare (already configured — only included here for
+reference / disaster recovery):
+- Framework preset: **None**
+- Build command: *(empty)*
+- Build output directory: **`site`**
 
-1. **Put the project in git** (see "Working on a new machine" → step 1).
-   The `site/` folder is what gets deployed. Raw originals
-   (`artwork photos/`, `photos objects/`, `photos dude/`, etc.) are excluded
-   via `.gitignore` — they're huge and don't belong in the deployable repo.
+### Adding images / updating the site
 
-2. **Push to GitHub** (private repo is fine).
-
-3. **Cloudflare Pages** → Create → Connect to Git → pick the repo:
-   - Build command: *(none)*
-   - Build output directory: `site`
-   - First deploy completes in ~30s. You get a `*.pages.dev` URL.
-
-4. **Custom domain** → add `noplacenotime.com`:
-   - If current registrar isn't Cloudflare: add a CNAME at the registrar
-     pointing the apex/`www` to the `*.pages.dev` URL.
-   - Better long-term: move nameservers to Cloudflare (free) — then you
-     manage DNS in one place. Propagation usually < 1 hour.
-
-### Adding images / updating the site after going live
-
-Same local flow as before, plus a `git push`:
+Local flow + one `git push`:
 
 1. Drop new originals into `artwork photos/<work>/` or
    `photos objects/<thing>/`.
@@ -421,89 +424,78 @@ Sandbox testing: keep using
 `cd site && python3 -m http.server 4000 --bind 0.0.0.0` locally, exactly
 as before. Deploy only when you're happy.
 
+### How to roll back a bad deploy
+
+Two options:
+1. **Easiest:** `git revert HEAD && git push` — Cloudflare rebuilds the
+   previous state. Clean history, no force-push.
+2. **Cloudflare UI:** Pages → deployment history → click any past deploy
+   → "Rollback to this deployment". Instant.
+
 ---
 
 ## Working on a new machine
 
-The project is just a folder of plain text + images. Two ways to migrate:
+The project is just a folder of plain text + images. Repo is already at
+GitHub, so a fresh machine is just a clone.
 
-### Option A — GitHub (recommended, also gets you deployment for free)
-
-On the **old machine**:
-
-```sh
-cd /path/to/noplacenotime
-
-# .gitignore: skip huge originals, derived intermediate folders, OS junk
-cat > .gitignore <<'EOF'
-.DS_Store
-artwork photos/
-photos dude/
-photos for site/
-photos objects/
-*_fotos_extra_webp/
-EOF
-
-git init
-git add .
-git commit -m "Initial commit"
-
-# Create a private repo on github.com first (e.g. mattiavanzini/noplacenotime),
-# then:
-git remote add origin git@github.com:<you>/noplacenotime.git
-git branch -M main
-git push -u origin main
-```
-
-Originals (`artwork photos/`, `photos objects/`, etc.) are **not** in git.
-They're ~GB of HEIC source files; you don't need them on the new machine
-unless you want to re-crop. To bring them too: zip them separately and
-copy via AirDrop / USB / cloud drive.
-
-On the **new machine**:
+### Setup on a new (macOS) machine
 
 ```sh
-# install prerequisites (macOS): Python 3 is usually pre-installed; Pillow isn't
-brew install python3       # if missing
-pip3 install Pillow         # for the conversion scripts
-# sips is built into macOS — nothing to install
+# 1. Prereqs. Python 3 + sips are built into macOS; only Pillow needs install.
+pip3 install Pillow
 
-git clone git@github.com:<you>/noplacenotime.git
+# 2. Clone the repo wherever you want to keep it
+mkdir -p ~/Documents/projects
+cd ~/Documents/projects
+git clone https://github.com/NOPLACENOCODE/digital-gallery.git noplacenotime
 cd noplacenotime
-cd site && python3 -m http.server 4000   # verify it runs
+
+# 3. Verify it runs locally
+cd site
+python3 -m http.server 4000
+# open http://localhost:4000 in a browser — should match the live site.
 ```
 
-Open `http://localhost:4000` — should look exactly like the old machine.
+### First push from the new machine
 
-### Option B — ZIP and copy
+On first push, git will ask:
+- **Username:** `NOPLACENOCODE`
+- **Password:** a Personal Access Token (NOT your account password — GitHub
+  removed password auth in 2021). Generate one at
+  https://github.com/settings/tokens → *Generate new token (classic)* →
+  scope **`repo`** → copy. macOS Keychain saves it after first use.
 
-Faster but you'll still need to do Option A eventually for deployment.
+If multiple GitHub accounts are configured on the machine (e.g. a work
+account already cached), set the remote URL with the username embedded so
+git asks for the right credential:
 
 ```sh
-cd /path/to
-zip -r noplacenotime.zip noplacenotime \
-  -x "noplacenotime/artwork photos/*" \
-  -x "noplacenotime/photos objects/*" \
-  -x "noplacenotime/photos dude/*" \
-  -x "noplacenotime/photos for site/*" \
-  -x "*.DS_Store"
-# AirDrop / Google Drive / USB the .zip to the new machine, unzip.
+git remote set-url origin https://NOPLACENOCODE@github.com/NOPLACENOCODE/digital-gallery.git
 ```
 
-The originals zip is separate (it's huge — several GB).
+### Source originals (huge folders, not in git)
+
+`artwork photos/`, `photos objects/`, `photos dude/`, `photos for site/`,
+`random/` are listed in `.gitignore`. They're multi-GB of HEIC originals
+and don't belong in the repo. The site renders without them; you only need
+them on a new machine if you want to re-crop existing photos or process
+new ones.
+
+To move them between machines: zip + iCloud Drive / Dropbox / Google Drive
+/ AirDrop. Drop the folders into the cloned `noplacenotime/` root —
+they'll be ignored by git automatically.
 
 ### What's tied to a specific machine
 
-Nothing in the site itself. The only paths that show up in scripts are
-**relative** (`./assets/...`). The conversion scripts in this CONTEXT use
-**absolute** paths inside `~/Desktop/...` purely for convenience while
-iterating with Claude — adjust to wherever you put the project on the new
-machine.
+Nothing in the site itself. The only paths in scripts are **relative**
+(`./assets/...`). Conversion one-liners in this CONTEXT use **absolute**
+paths inside `~/Desktop/...` purely for convenience — adjust to wherever
+the project lives on the new machine.
 
 Settings worth bringing over (optional):
-- Whatever `git config --global user.name` / `user.email` you want for
-  commits.
-- Your editor of choice + any keybindings.
+- `git config --global user.name` / `user.email` for commits.
+- Your editor of choice + keybindings.
 
 ---
 
