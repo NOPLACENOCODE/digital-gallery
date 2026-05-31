@@ -1,3 +1,24 @@
+(function () {
+  // ── COMING SOON GUARD ──────────────────────────────────────────────────────
+  // To re-enable the objects page: delete the one-line inline script in
+  // objects.html that sets window.OBJECTS_COMING_SOON = true. Nothing else.
+  if (window.OBJECTS_COMING_SOON) {
+    const main = document.querySelector("main");
+    if (main) main.innerHTML = `
+      <section class="section" style="
+        display:flex;align-items:center;justify-content:center;
+        min-height:60vh;padding-top:4rem">
+        <p style="
+          font-family:var(--font-serif);font-size:1.4rem;
+          letter-spacing:.02em;color:#bbb">
+          Coming soon
+        </p>
+      </section>`;
+    return;
+  }
+  // ── END COMING SOON GUARD ──────────────────────────────────────────────────
+
+
 /* ---------- Object catalog ----------
    Each object is something for sale. The figure wears one item per category
    at a time (last-added wins), so categorize each item carefully.
@@ -541,3 +562,4 @@ document.addEventListener('keydown', (e) => {
 /* ---------- Initial render ---------- */
 
 render();
+})();
