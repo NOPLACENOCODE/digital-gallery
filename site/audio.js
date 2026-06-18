@@ -4,17 +4,32 @@
 */
 
 (function () {
+  const Ctx = window.AudioContext || window.webkitAudioContext;
   let ctx = null;
 
+  // Create the audio context eagerly at load. `new AudioContext()` is the
+  // expensive, main-thread-blocking part; doing it now (the context starts
+  // suspended) means the user's FIRST click only has to resume it — cheap —
+  // instead of paying the construction cost, which used to stall the first
+  // interaction (e.g. the first house-spin lagged).
+  if (Ctx) { try { ctx = new Ctx(); } catch (e) { ctx = null; } }
+
   function getCtx() {
-    if (!ctx) {
-      const Ctx = window.AudioContext || window.webkitAudioContext;
-      if (!Ctx) return null;
-      ctx = new Ctx();
-    }
+    if (!ctx && Ctx) { try { ctx = new Ctx(); } catch (e) { return null; } }
+    if (!ctx) return null;
     if (ctx.state === 'suspended') ctx.resume();
     return ctx;
   }
+
+  // Resume the (suspended) context on the first user gesture anywhere on the
+  // page, so it's already running before any sound is triggered. pointerdown
+  // fires before click, so even tapping the house first warms it in time.
+  function unlock() {
+    if (ctx && ctx.state === 'suspended') ctx.resume();
+  }
+  ['pointerdown', 'touchstart', 'keydown'].forEach((ev) =>
+    window.addEventListener(ev, unlock, { passive: true })
+  );
 
   // One square-wave note, slightly detuned with a second oscillator for that
   // lo-fi flutter / chip-fidelity character. Tight envelope keeps it crisp

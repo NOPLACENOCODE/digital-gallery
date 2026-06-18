@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>noplace_notime — video hero preview 2</title>
+  <meta name="theme-color" content="#ffffff" />
+
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css?v=169" />
+  <style>
+    /* Spinning-house video standing in for the CSS coin.
+       Swap the src below to logo-spin-half.mp4 to try the single-pass cut. */
+    .spin-stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .spin-video {
+      height: clamp(140px, 26vw, 280px);
+      width: auto;
+      display: block;
+      /* video background is pure #fff so it blends into the page */
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar" aria-hidden="true">
+    <button class="topbar-logo" aria-label="Back to top">
+      <img src="assets/logo.png" alt="" />
+    </button>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="spin-stage">
+        <video class="spin-video" src="assets/logo-spin-2.mp4?v=1"
+               autoplay loop muted playsinline
+               aria-label="noplace_notime — a spinning metal house"></video>
+      </div>
+
+      <nav class="menu" aria-label="Primary">
+        <a href="artworks.html">ARTWORKS</a>
+        <a href="info.html">INFO</a>
+      </nav>
+
+      <p class="sr-only">noplace_notime — an artist studio offering original artwork and one-of-a-kind objects.</p>
+    </section>
+  </main>
+
+  <script src="audio.js?v=169"></script>
+  <script src="script.js?v=169"></script>
+</body>
+</html>

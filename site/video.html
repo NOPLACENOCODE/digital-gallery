@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>noplace_notime — video hero preview</title>
+  <meta name="theme-color" content="#ffffff" />
+
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css?v=169" />
+  <style>
+    /* Spinning-house video standing in for the CSS coin.
+       Swap the src below to logo-spin-half.mp4 to try the single-pass cut. */
+    .spin-stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .spin-video {
+      /* Video is cropped tight to the house (300x410), so very little white
+         padding. Height set so the house renders a touch larger than the
+         original homepage logo. */
+      height: min(34vw, 132px);
+      width: auto;
+      display: block;
+      /* video background is pure #fff so it blends into the page */
+    }
+    /* Tighten the gap between the logo and the menu for this page. */
+    .hero { gap: clamp(14px, 3vh, 26px); }
+
+    /* Cursor "candle": a soft warm light around the pointer, with a very
+       slight dark vignette everywhere else. pointer-events:none so clicks
+       still reach the video. */
+    /* Subtle film grain over the whole page for texture. */
+    .grain {
+      position: fixed;
+      inset: 0;
+      z-index: 41;
+      pointer-events: none;
+      opacity: 0.07;
+      mix-blend-mode: multiply;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 180px 180px;
+    }
+
+    .cursor-light {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      pointer-events: none;
+      width: 100vw;
+      height: 100vh;
+      /* The canvas is drawn at low resolution and stretched, so the light
+         renders as chunky pixels (PS2 vibe). crisp-edges first as a Firefox
+         fallback; pixelated last so Chrome/Safari use nearest-neighbour. */
+      image-rendering: crisp-edges;
+      image-rendering: pixelated;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar" aria-hidden="true">
+    <button class="topbar-logo" aria-label="Back to top">
+      <img src="assets/logo.png" alt="" />
+    </button>
+  </header>
+
+  <canvas class="cursor-light" aria-hidden="true"></canvas>
+  <div class="grain" aria-hidden="true"></div>
+
+  <main>
+    <section class="hero">
+      <div class="spin-stage">
+        <video class="spin-video" src="assets/logo-spin.mp4?v=11"
+               autoplay loop muted playsinline preload="auto"
+               aria-label="noplace_notime — a spinning metal house"></video>
+      </div>
+
+      <nav class="menu" aria-label="Primary">
+        <a href="artworks.html">ARTWORKS</a>
+        <a href="info.html">INFO</a>
+      </nav>
+
+      <p class="sr-only">noplace_notime — an artist studio offering original artwork and one-of-a-kind objects.</p>
+    </section>
+  </main>
+
+  <script src="audio.js?v=170"></script>
+  <script src="script.js?v=169"></script>
+
+  <script>
+    // Cursor "candle": a low-res canvas (scaled up blocky) draws a dark
+    // vignette with a warm light pool that follows the pointer and wobbles /
+    // flickers with layered noise like a real flame.
+    (function () {
+      const canvas = document.querySelector('.cursor-light');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      const PIX = 18;         // CSS px per drawn pixel — higher = chunkier
+      let W = 0, H = 0;
+      let baseR = 800, glowR = 480;   // light pool radius (scales with viewport)
+      function resize() {
+        W = Math.ceil(window.innerWidth / PIX);
+        H = Math.ceil(window.innerHeight / PIX);
+        canvas.width = W;
+        canvas.height = H;
+        // huge light pool: ~screen-diagonal so it fills the whole screen,
+        // darkness only reaches the far edges/corners
+        baseR = Math.hypot(window.innerWidth, window.innerHeight) * 0.9;
+        glowR = baseR * 0.55;
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      let tx = window.innerWidth / 2, ty = window.innerHeight * 0.42; // cursor target (CSS px)
+      let cx = tx, cy = ty;                                           // smoothed center
+
+      // Static candle: no wobble/flicker, so nothing redraws while the mouse is
+      // still. It only redraws while the cursor is moving (and stops once it
+      // settles), which leaves the video decoder free to stay warm.
+      function draw() {
+        const px = cx / PIX, py = cy / PIX;
+        const R = baseR / PIX, G = glowR / PIX;
+        ctx.clearRect(0, 0, W, H);
+
+        // gradual dome of darkness with a clear, soft center
+        const d = ctx.createRadialGradient(px, py, 0, px, py, R);
+        d.addColorStop(0.00, 'rgba(8,7,12,0)');
+        d.addColorStop(0.45, 'rgba(8,7,12,0.03)');
+        d.addColorStop(0.75, 'rgba(8,7,12,0.12)');
+        d.addColorStop(1.00, 'rgba(8,7,12,0.30)');
+        ctx.fillStyle = d;
+        ctx.fillRect(0, 0, W, H);
+
+        // soft warm glow at the cursor
+        const g = ctx.createRadialGradient(px, py, 0, px, py, G);
+        g.addColorStop(0, 'rgba(255,190,110,0.05)');
+        g.addColorStop(1, 'rgba(255,190,110,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, W, H);
+      }
+
+      // Redraw on demand: ease the light toward the cursor, and keep scheduling
+      // frames only while it's still catching up. Idle = zero redraws.
+      let scheduled = false;
+      function tick() {
+        scheduled = false;
+        if (window.__houseSpinning) return;   // hand the decoder full priority
+        cx += (tx - cx) * 0.2;
+        cy += (ty - cy) * 0.2;
+        draw();
+        if (Math.abs(tx - cx) > 0.5 || Math.abs(ty - cy) > 0.5) requestDraw();
+      }
+      function requestDraw() {
+        if (!scheduled) { scheduled = true; requestAnimationFrame(tick); }
+      }
+      window.addEventListener('pointermove', (e) => {
+        tx = e.clientX; ty = e.clientY; requestDraw();
+      }, { passive: true });
+      window.addEventListener('resize', requestDraw);
+      draw();   // initial paint
+    })();
+  </script>
+
+  <script>
+    // The house is driven entirely by us: we advance video.currentTime every
+    // frame instead of using native playback. It runs at 1x when idle and each
+    // click adds speed (decaying back to 1x). Because the video is ALWAYS in
+    // the same seek-driven mode, there's no play→seek transition on the first
+    // click — so the first spin is instant, no cold-start lag.
+    (function () {
+      const video = document.querySelector('.spin-video');
+      if (!video) return;
+      video.style.cursor = 'pointer';
+
+      let speed = 1;         // 1 = normal idle spin; bumps up on tap
+      const BUMP = 30;       // speed added per tap
+      const MAX = 80;        // ceiling
+      const DECAY = 2;       // exponential decay back to 1x (higher = quicker)
+      let last = 0;
+      let started = false;
+
+      function loop(now) {
+        const dt = Math.min((now - last) / 1000, 0.05);
+        last = now;
+        const dur = video.duration || 1;
+        video.currentTime = (video.currentTime + dt * speed) % dur;
+        // ease speed back toward the idle 1x (never below)
+        speed = 1 + (speed - 1) * Math.exp(-DECAY * dt);
+        if (speed < 1.001) speed = 1;
+        // let the candle yield the decoder while spinning fast
+        window.__houseSpinning = speed > 1.5;
+        requestAnimationFrame(loop);
+      }
+
+      function start() {
+        if (started) return;
+        started = true;
+        try { video.pause(); } catch (e) {}   // take over from native playback
+        last = performance.now();
+        requestAnimationFrame(loop);
+      }
+
+      video.addEventListener('click', () => {
+        if (window.audioTink) window.audioTink();
+        speed = Math.min(speed + BUMP, MAX);   // stack up on rapid taps
+      });
+
+      if (video.readyState >= 1) start();
+      else video.addEventListener('loadedmetadata', start, { once: true });
+    })();
+  </script>
+</body>
+</html>
