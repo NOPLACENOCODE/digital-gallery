@@ -1,3 +1,8 @@
+## 2026-06-19 — Hero: animated WebP instead of video
+- iOS Low Power Mode blocked the <video> hero and showed a play button for many mobile visitors
+- Replaced the spinning-house <video> + currentTime-scrubbing JS with an animated WebP <img> (assets/logo-spin.webp, 418KB, loops on every device incl. Low Power Mode)
+- Tap still plays the metallic tink sound; the old tap-to-spin-faster visual is not possible on an animated image
+
 ## 2026-06-19 — Rename Crucifixion images (drop "black")
 - Renamed crucifixion-black-{3,4-zoom,5}.jpg → crucifixion-{3,4-zoom,5}.jpg
 - Updated script.js images array, bumped ARTWORK_ASSET_VERSION 139 → 140, script.js?v=167 → 168 in artworks.html

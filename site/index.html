@@ -75,9 +75,8 @@
   <main>
     <section class="hero">
       <div class="spin-stage">
-        <video class="spin-video" src="assets/logo-spin.mp4?v=11"
-               autoplay loop muted playsinline preload="auto"
-               aria-label="noplace_notime — a spinning metal house"></video>
+        <img class="spin-video" src="assets/logo-spin.webp?v=12"
+               alt="noplace_notime — a spinning metal house" />
       </div>
 
       <nav class="menu" aria-label="Primary">
@@ -180,47 +179,17 @@
   </script>
 
   <script>
-    // The house is driven entirely by us: we advance video.currentTime every
-    // frame instead of using native playback. It runs at 1x when idle and each
-    // click adds speed (decaying back to 1x).
+    // The spinning house is an animated WebP — it loops on its own on every
+    // device, including iOS Low Power Mode (no native video = no play button).
+    // Tapping plays the metallic "tink"; the old video speed-up isn't possible
+    // on an animated image.
     (function () {
-      const video = document.querySelector('.spin-video');
-      if (!video) return;
-      video.style.cursor = 'pointer';
-
-      let speed = 1;         // 1 = normal idle spin; bumps up on tap
-      const BUMP = 30;       // speed added per tap
-      const MAX = 80;        // ceiling
-      const DECAY = 2;       // exponential decay back to 1x (higher = quicker)
-      let last = 0;
-      let started = false;
-
-      function loop(now) {
-        const dt = Math.min((now - last) / 1000, 0.05);
-        last = now;
-        const dur = video.duration || 1;
-        video.currentTime = (video.currentTime + dt * speed) % dur;
-        speed = 1 + (speed - 1) * Math.exp(-DECAY * dt);
-        if (speed < 1.001) speed = 1;
-        window.__houseSpinning = speed > 1.5;
-        requestAnimationFrame(loop);
-      }
-
-      function start() {
-        if (started) return;
-        started = true;
-        try { video.pause(); } catch (e) {}   // take over from native playback
-        last = performance.now();
-        requestAnimationFrame(loop);
-      }
-
-      video.addEventListener('click', () => {
+      const house = document.querySelector('.spin-video');
+      if (!house) return;
+      house.style.cursor = 'pointer';
+      house.addEventListener('click', () => {
         if (window.audioTink) window.audioTink();
-        speed = Math.min(speed + BUMP, MAX);   // stack up on rapid taps
       });
-
-      if (video.readyState >= 1) start();
-      else video.addEventListener('loadedmetadata', start, { once: true });
     })();
   </script>
 </body>
