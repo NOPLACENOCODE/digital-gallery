@@ -1732,17 +1732,3 @@ body.modal-open { overflow: hidden; }
 
   .cart-modal-summary { max-width: 360px; }
 }
-
-/* iOS Safari refuses video autoplay in Low Power Mode and draws a native
-   play-button overlay on the hero. Hide that button so the clean first frame
-   of the spinning house shows instead; playback resumes on the first tap
-   (see the .spin-video handler in script.js). */
-.spin-video::-webkit-media-controls-start-playback-button,
-.spin-video::-webkit-media-controls-overlay-play-button,
-.spin-video::-webkit-media-controls-play-button,
-.spin-video::-webkit-media-controls {
-  display: none !important;
-  -webkit-appearance: none;
-}
-/* Let taps fall through to the document-level resume handler. */
-.spin-video { pointer-events: none; }
