@@ -467,3 +467,20 @@ modalScroller.addEventListener('scroll', () => {
 });
 
 } // end: if (grid && modal)
+
+/* Spinning-house hero video. iOS (especially Low Power Mode) blocks autoplay
+   and would show a play button — that button is suppressed in CSS. Here we
+   keep trying to start playback and resume on the first user gesture, so the
+   house starts spinning as soon as the visitor taps/clicks. Guarded so it is
+   a no-op on pages without the video. */
+const spinVideo = document.querySelector('.spin-video');
+if (spinVideo) {
+  const tryPlay = () => {
+    const p = spinVideo.play();
+    if (p && typeof p.catch === 'function') p.catch(() => {});
+  };
+  if (spinVideo.readyState >= 2) tryPlay();
+  else spinVideo.addEventListener('loadeddata', tryPlay, { once: true });
+  document.addEventListener('touchstart', tryPlay, { once: true, passive: true });
+  document.addEventListener('click', tryPlay, { once: true });
+}

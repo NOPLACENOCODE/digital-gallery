@@ -1,3 +1,9 @@
+## 2026-06-19 — Fix iOS play-button on hero video
+- iOS Safari (esp. Low Power Mode) blocked video autoplay and drew a native play button over the spinning house on first load
+- Hid the play-button overlay via ::-webkit-media-controls pseudo-elements (style.css) so the clean first frame shows
+- Added a .spin-video handler in script.js that retries play() and resumes on the first tap/click
+- Bumped style.css + script.js to v=170 in index.html
+
 ## 2026-06-19 — Rename Crucifixion images (drop "black")
 - Renamed crucifixion-black-{3,4-zoom,5}.jpg → crucifixion-{3,4-zoom,5}.jpg
 - Updated script.js images array, bumped ARTWORK_ASSET_VERSION 139 → 140, script.js?v=167 → 168 in artworks.html
