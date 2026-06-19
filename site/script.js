@@ -95,7 +95,7 @@ const works = [
     materials: 'Spray, acrylic, airbrush, oil. Framed in oak.',
     price: '€3000',
     images: [
-      'assets/works/somni-1.jpg',
+      'assets/works/somni-1.png',
       'assets/works/somni-2.jpg',
       'assets/works/somni-5.jpg',
       'assets/works/somni-zoom.jpg',
