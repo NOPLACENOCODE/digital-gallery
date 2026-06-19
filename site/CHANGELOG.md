@@ -1,3 +1,8 @@
+## 2026-06-19 — Hero: desktop video, mobile WebP
+- Desktop (hover+fine pointer) gets the interactive MP4 spin (rAF currentTime scrub, click = speed bump + tink)
+- Touch/mobile keeps the animated WebP <img> — loops even in iOS Low Power Mode, no play button; also the no-JS fallback
+- Video is created in JS only on desktop, so phones never download the MP4
+
 ## 2026-06-19 — Hero: animated WebP instead of video
 - iOS Low Power Mode blocked the <video> hero and showed a play button for many mobile visitors
 - Replaced the spinning-house <video> + currentTime-scrubbing JS with an animated WebP <img> (assets/logo-spin.webp, 418KB, loops on every device incl. Low Power Mode)

@@ -179,17 +179,61 @@
   </script>
 
   <script>
-    // The spinning house is an animated WebP — it loops on its own on every
-    // device, including iOS Low Power Mode (no native video = no play button).
-    // Tapping plays the metallic "tink"; the old video speed-up isn't possible
-    // on an animated image.
+    // Hero house. Desktop (mouse) gets the interactive <video>: a rAF loop
+    // scrubs currentTime to spin it, and clicking speeds it up + plays a
+    // "tink". Touch devices (phones) keep the animated WebP <img>, which loops
+    // on its own even in iOS Low Power Mode (a <video> there shows a play
+    // button). The WebP is also the no-JS fallback.
     (function () {
-      const house = document.querySelector('.spin-video');
-      if (!house) return;
-      house.style.cursor = 'pointer';
-      house.addEventListener('click', () => {
+      const img = document.querySelector('img.spin-video');
+      if (!img) return;
+      const desktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+      if (!desktop) {
+        img.style.cursor = 'pointer';
+        img.addEventListener('click', () => { if (window.audioTink) window.audioTink(); });
+        return;
+      }
+
+      // --- Desktop: swap in the interactive spinning video ---
+      const video = document.createElement('video');
+      video.className = 'spin-video';
+      video.src = 'assets/logo-spin.mp4?v=11';
+      video.muted = true;
+      video.loop = true;
+      video.preload = 'auto';
+      video.setAttribute('playsinline', '');
+      video.setAttribute('aria-label', 'noplace_notime \u2014 a spinning metal house');
+      img.replaceWith(video);
+
+      video.style.cursor = 'pointer';
+      let speed = 1;          // 1 = idle spin; bumps up on click
+      const BUMP = 30, MAX = 80, DECAY = 2;
+      let last = 0, started = false;
+
+      function loop(now) {
+        const dt = Math.min((now - last) / 1000, 0.05);
+        last = now;
+        const dur = video.duration || 1;
+        video.currentTime = (video.currentTime + dt * speed) % dur;
+        speed = 1 + (speed - 1) * Math.exp(-DECAY * dt);
+        if (speed < 1.001) speed = 1;
+        window.__houseSpinning = speed > 1.5;
+        requestAnimationFrame(loop);
+      }
+      function start() {
+        if (started) return;
+        started = true;
+        try { video.pause(); } catch (e) {}
+        last = performance.now();
+        requestAnimationFrame(loop);
+      }
+      video.addEventListener('click', () => {
         if (window.audioTink) window.audioTink();
+        speed = Math.min(speed + BUMP, MAX);
       });
+      if (video.readyState >= 1) start();
+      else video.addEventListener('loadedmetadata', start, { once: true });
     })();
   </script>
 </body>
