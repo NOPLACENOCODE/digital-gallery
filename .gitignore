@@ -12,3 +12,9 @@ random/
 # OS junk
 .DS_Store
 Thumbs.db
+
+# Local-only maintenance files (not part of the deployable site/)
+.claude/
+CLAUDE.md
+HANDOVER.md
+glitch.html
