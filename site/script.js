@@ -1,6 +1,6 @@
 /* Cache-busting for artwork images. Bump this whenever a PNG/JPG/WebP under
    assets/works/ is edited in place — it forces browsers to refetch. */
-const ARTWORK_ASSET_VERSION = 137;
+const ARTWORK_ASSET_VERSION = 138;
 const vAsset = (url) => url ? `${url}?v=${ARTWORK_ASSET_VERSION}` : url;
 
 /* Topbar/hero behavior — only present on the home page */
@@ -95,10 +95,11 @@ const works = [
     materials: 'Spray, acrylic, airbrush, oil. Framed in oak.',
     price: '€3000',
     images: [
-      'assets/works/somni.jpg',
+      'assets/works/somni-1.jpg',
+      'assets/works/somni-2.jpg',
+      'assets/works/somni-5.jpg',
       'assets/works/somni-zoom.jpg',
       'assets/works/somni-zoom-2.jpg',
-      'assets/works/somni-zoom-3.jpg',
     ],
   },
   {
