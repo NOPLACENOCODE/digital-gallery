@@ -31,8 +31,6 @@
       height: min(34vw, 132px);
       width: auto;
       display: block;
-      touch-action: manipulation;             /* no iOS double-tap-zoom delay */
-      -webkit-tap-highlight-color: transparent;
     }
     /* Tighten the gap between the logo and the menu. */
     .hero { gap: clamp(14px, 3vh, 26px); }
@@ -181,67 +179,61 @@
   </script>
 
   <script>
-    // Hero house. One renderer for every device: a <canvas> driven by
-    // requestAnimationFrame, fed from a sprite sheet (logo-spin-sprite.webp).
-    // It autoplays everywhere -- including iOS Low Power Mode, where a <video>
-    // refuses to autoplay and shows a play button -- and clicking/tapping speeds
-    // the spin up (metallic "tink") before it eases back to 1x. The animated
-    // WebP <img> in the markup stays as the no-JS / load-failure fallback
-    // (it also loops in Low Power Mode, just without tap-to-spin).
+    // Hero house. Desktop (mouse) gets the interactive <video>: a rAF loop
+    // scrubs currentTime to spin it, and clicking speeds it up + plays a
+    // "tink". Touch devices (phones) keep the animated WebP <img>, which loops
+    // on its own even in iOS Low Power Mode (a <video> there shows a play
+    // button). The WebP is also the no-JS fallback.
     (function () {
       const img = document.querySelector('img.spin-video');
       if (!img) return;
+      const desktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
-      const FRAMES = 30, COLS = 6, ROWS = 5;
-      const LOOP_SECONDS = 4.5167;            // one full rotation = the source clip
-      const BUMP = 30, MAX = 80, DECAY = 2;   // click speed-bump + exponential decay
+      if (!desktop) {
+        img.style.cursor = 'pointer';
+        img.addEventListener('click', () => { if (window.audioTink) window.audioTink(); });
+        return;
+      }
 
-      const sheet = new Image();
-      sheet.onload = () => {
-        const fw = sheet.naturalWidth / COLS;
-        const fh = sheet.naturalHeight / ROWS;
+      // --- Desktop: swap in the interactive spinning video ---
+      const video = document.createElement('video');
+      video.className = 'spin-video';
+      video.src = 'assets/logo-spin.mp4?v=11';
+      video.muted = true;
+      video.loop = true;
+      video.preload = 'auto';
+      video.setAttribute('playsinline', '');
+      video.setAttribute('aria-label', 'noplace_notime \u2014 a spinning metal house');
+      img.replaceWith(video);
 
-        const canvas = document.createElement('canvas');
-        canvas.className = 'spin-video';
-        canvas.width = fw;
-        canvas.height = fh;
-        canvas.setAttribute('role', 'img');
-        canvas.setAttribute('aria-label', img.getAttribute('alt') || '');
-        canvas.style.cursor = 'pointer';
-        img.replaceWith(canvas);
+      video.style.cursor = 'pointer';
+      let speed = 1;          // 1 = idle spin; bumps up on click
+      const BUMP = 30, MAX = 80, DECAY = 2;
+      let last = 0, started = false;
 
-        const ctx = canvas.getContext('2d');
-        let speed = 1, virtualT = 0, last = 0, lastIdx = -1;
-
-        function drawCell(i) {
-          const sx = (i % COLS) * fw, sy = Math.floor(i / COLS) * fh;
-          ctx.clearRect(0, 0, fw, fh);
-          ctx.drawImage(sheet, sx, sy, fw, fh, 0, 0, fw, fh);
-        }
-
-        function loop(now) {
-          if (!last) last = now;
-          const dt = Math.min((now - last) / 1000, 0.05);
-          last = now;
-          virtualT = (virtualT + dt * speed) % LOOP_SECONDS;
-          speed = 1 + (speed - 1) * Math.exp(-DECAY * dt);
-          if (speed < 1.001) speed = 1;
-          const idx = Math.floor((virtualT / LOOP_SECONDS) * FRAMES) % FRAMES;
-          if (idx !== lastIdx) { drawCell(idx); lastIdx = idx; }
-          window.__houseSpinning = speed > 1.5;
-          requestAnimationFrame(loop);
-        }
-
-        canvas.addEventListener('click', () => {
-          if (window.audioTink) window.audioTink();
-          speed = Math.min(speed + BUMP, MAX);
-        });
-
-        drawCell(0);
+      function loop(now) {
+        const dt = Math.min((now - last) / 1000, 0.05);
+        last = now;
+        const dur = video.duration || 1;
+        video.currentTime = (video.currentTime + dt * speed) % dur;
+        speed = 1 + (speed - 1) * Math.exp(-DECAY * dt);
+        if (speed < 1.001) speed = 1;
+        window.__houseSpinning = speed > 1.5;
         requestAnimationFrame(loop);
-      };
-      // On failure, leave the animated WebP <img> in place (fallback).
-      sheet.src = 'assets/logo-spin-sprite.webp?v=1';
+      }
+      function start() {
+        if (started) return;
+        started = true;
+        try { video.pause(); } catch (e) {}
+        last = performance.now();
+        requestAnimationFrame(loop);
+      }
+      video.addEventListener('click', () => {
+        if (window.audioTink) window.audioTink();
+        speed = Math.min(speed + BUMP, MAX);
+      });
+      if (video.readyState >= 1) start();
+      else video.addEventListener('loadedmetadata', start, { once: true });
     })();
   </script>
 </body>

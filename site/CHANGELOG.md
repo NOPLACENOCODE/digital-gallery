@@ -1,9 +1,3 @@
-## 2026-06-19 — Hero: unified canvas spin (autoplay + tap on mobile too)
-- Replaced the desktop-video / mobile-WebP split with a single <canvas> renderer driven by requestAnimationFrame, fed from a sprite sheet (assets/logo-spin-sprite.webp, 30 frames, 135KB)
-- Autoplays on every device incl. iOS Low Power Mode (canvas/rAF isn't subject to the <video> autoplay block) and tap/click speeds up the spin + tink, with smooth decay back to 1x
-- Animated WebP <img> kept as the no-JS / load-failure fallback; logo-spin.mp4 retained as the re-encode source
-- Added touch-action:manipulation + tap-highlight removal to .spin-video
-
 ## 2026-06-19 — Hero: desktop video, mobile WebP
 - Desktop (hover+fine pointer) gets the interactive MP4 spin (rAF currentTime scrub, click = speed bump + tink)
 - Touch/mobile keeps the animated WebP <img> — loops even in iOS Low Power Mode, no play button; also the no-JS fallback
