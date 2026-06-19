@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PIGEON GLITCH LAB</title>
+<style>
+  :root{
+    --bg:#0a0a0a; --panel:#141414; --line:#2a2a2a; --txt:#e8e8e8;
+    --accent:#00ff9c; --accent2:#ff2e6d; --muted:#888;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{
+    background:var(--bg); color:var(--txt);
+    font-family:ui-monospace,"SF Mono",Menlo,monospace;
+    font-size:12px; display:flex; height:100vh; overflow:hidden;
+  }
+  /* SIDEBAR */
+  #panel{
+    width:320px; min-width:320px; height:100%; overflow-y:auto;
+    background:var(--panel); border-right:1px solid var(--line);
+    padding:16px; display:flex; flex-direction:column; gap:14px;
+  }
+  h1{font-size:14px; letter-spacing:2px; color:var(--accent)}
+  h1 span{color:var(--accent2)}
+  .sub{color:var(--muted); font-size:10px; line-height:1.5}
+  .group{border:1px solid var(--line); border-radius:6px; padding:10px}
+  .group h2{
+    font-size:10px; letter-spacing:1.5px; color:var(--muted);
+    text-transform:uppercase; margin-bottom:8px; display:flex;
+    justify-content:space-between; align-items:center;
+  }
+  .group h2 input{margin:0}
+  label.row{display:flex; flex-direction:column; gap:3px; margin-bottom:9px}
+  label.row .lbl{display:flex; justify-content:space-between; color:var(--muted)}
+  label.row .lbl b{color:var(--accent)}
+  input[type=range]{
+    -webkit-appearance:none; width:100%; height:3px; background:var(--line);
+    border-radius:2px; outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:13px; height:13px; border-radius:50%;
+    background:var(--accent); cursor:pointer; border:2px solid var(--bg);
+  }
+  select,button{
+    font-family:inherit; font-size:11px; background:var(--bg);
+    color:var(--txt); border:1px solid var(--line); border-radius:4px;
+    padding:7px 9px; cursor:pointer; width:100%;
+  }
+  button:hover{border-color:var(--accent); color:var(--accent)}
+  button.primary{background:var(--accent); color:#000; border-color:var(--accent); font-weight:bold}
+  button.primary:hover{background:#fff; color:#000}
+  button.danger:hover{border-color:var(--accent2); color:var(--accent2)}
+  .btnrow{display:flex; gap:8px}
+  /* THUMBS */
+  #thumbs{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:8px}
+  .thumb{
+    position:relative; aspect-ratio:1; border-radius:4px; overflow:hidden;
+    border:2px solid transparent; cursor:pointer; background:#000;
+  }
+  .thumb img{width:100%; height:100%; object-fit:cover; display:block}
+  .thumb.on{border-color:var(--accent)}
+  .thumb .x{
+    position:absolute; top:0; right:0; background:var(--accent2); color:#fff;
+    width:16px; height:16px; line-height:14px; text-align:center; font-size:11px;
+    opacity:0; transition:.1s;
+  }
+  .thumb:hover .x{opacity:1}
+  /* STAGE */
+  #stage{
+    flex:1; display:flex; align-items:center; justify-content:center;
+    position:relative; overflow:hidden;
+    background:
+      linear-gradient(45deg,#111 25%,transparent 25%),
+      linear-gradient(-45deg,#111 25%,transparent 25%),
+      linear-gradient(45deg,transparent 75%,#111 75%),
+      linear-gradient(-45deg,transparent 75%,#111 75%);
+    background-size:24px 24px; background-position:0 0,0 12px,12px -12px,-12px 0;
+  }
+  #canvas{max-width:94%; max-height:94%; box-shadow:0 0 60px rgba(0,0,0,.8); image-rendering:auto}
+  #drop{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:10px; color:var(--muted); pointer-events:none;
+    text-align:center; padding:40px;
+  }
+  #drop.hide{display:none}
+  #drop b{color:var(--accent); font-size:16px; letter-spacing:2px}
+  #stage.dragover{outline:2px dashed var(--accent); outline-offset:-12px}
+  .seedline{display:flex; gap:8px; align-items:center}
+  .seedline input[type=number]{
+    flex:1; background:var(--bg); color:var(--txt); border:1px solid var(--line);
+    border-radius:4px; padding:6px; font-family:inherit; font-size:11px;
+  }
+  .badge{font-size:9px; color:var(--muted)}
+  input[type=file]{display:none}
+</style>
+</head>
+<body>
+  <div id="panel">
+    <div>
+      <h1>PIGEON<span>::</span>GLITCH</h1>
+      <p class="sub">Drop images → mix → break → export.<br>Every slider is live.</p>
+    </div>
+
+    <div class="btnrow">
+      <button class="primary" onclick="document.getElementById('file').click()">+ ADD IMAGES</button>
+      <button class="danger" onclick="clearAll()">CLEAR</button>
+    </div>
+    <input type="file" id="file" accept="image/*" multiple>
+    <div id="thumbs"></div>
+
+    <div class="group">
+      <h2>Mix mode</h2>
+      <label class="row">
+        <span class="lbl">Blend</span>
+        <select id="blend">
+          <option value="source-over">stack (top wins)</option>
+          <option value="difference" selected>difference</option>
+          <option value="screen">screen</option>
+          <option value="multiply">multiply</option>
+          <option value="exclusion">exclusion</option>
+          <option value="lighten">lighten</option>
+          <option value="hard-light">hard-light</option>
+          <option value="color-dodge">color-dodge</option>
+        </select>
+      </label>
+      <label class="row">
+        <span class="lbl">Layer drift <b id="v_drift">0</b></span>
+        <input type="range" id="drift" min="0" max="200" value="40">
+      </label>
+    </div>
+
+    <div class="group">
+      <h2>RGB split</h2>
+      <label class="row">
+        <span class="lbl">Amount <b id="v_rgb">0</b></span>
+        <input type="range" id="rgb" min="0" max="120" value="18">
+      </label>
+      <label class="row">
+        <span class="lbl">Angle <b id="v_rgbA">0</b></span>
+        <input type="range" id="rgbA" min="0" max="360" value="0">
+      </label>
+    </div>
+
+    <div class="group">
+      <h2>Slice shift</h2>
+      <label class="row">
+        <span class="lbl">Slices <b id="v_slices">0</b></span>
+        <input type="range" id="slices" min="0" max="80" value="22">
+      </label>
+      <label class="row">
+        <span class="lbl">Max shift <b id="v_shift">0</b></span>
+        <input type="range" id="shift" min="0" max="300" value="60">
+      </label>
+    </div>
+
+    <div class="group">
+      <h2>Pixel sort</h2>
+      <label class="row">
+        <span class="lbl">Threshold <b id="v_sort">0</b></span>
+        <input type="range" id="sort" min="0" max="255" value="0">
+      </label>
+      <label class="row">
+        <span class="lbl">Direction</span>
+        <select id="sortDir">
+          <option value="h">horizontal</option>
+          <option value="v">vertical</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="group">
+      <h2>Dirt</h2>
+      <label class="row">
+        <span class="lbl">Noise <b id="v_noise">0</b></span>
+        <input type="range" id="noise" min="0" max="100" value="0">
+      </label>
+      <label class="row">
+        <span class="lbl">Scanlines <b id="v_scan">0</b></span>
+        <input type="range" id="scan" min="0" max="100" value="0">
+      </label>
+      <label class="row">
+        <span class="lbl">Wave warp <b id="v_wave">0</b></span>
+        <input type="range" id="wave" min="0" max="60" value="0">
+      </label>
+    </div>
+
+    <div class="group">
+      <h2>Seed</h2>
+      <div class="seedline">
+        <input type="number" id="seed" value="1">
+        <button onclick="randomize()" style="width:auto; white-space:nowrap">🎲 RANDOM</button>
+      </div>
+      <p class="badge" style="margin-top:6px">Randomize jumps every dial + seed.</p>
+    </div>
+
+    <button class="primary" onclick="exportPNG()">⬇ EXPORT PNG</button>
+    <p class="badge" id="status">no images loaded</p>
+  </div>
+
+  <div id="stage">
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <div id="drop">
+      <b>DROP PIGEONS HERE</b>
+      <span class="sub">or click + ADD IMAGES.<br>Multiple = they glitch together.</span>
+    </div>
+  </div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('canvas'), ctx = canvas.getContext('2d', {willReadFrequently:true});
+let images = []; // {img, on}
+let rafQueued = false;
+
+// ---- seeded RNG ----
+let _s = 1;
+function srand(){ _s = (_s*16807) % 2147483647; return (_s-1)/2147483646; }
+function reseed(n){ _s = (n*2654435761) % 2147483647; if(_s<=0)_s+=2147483646; }
+
+// ---- controls -> live render ----
+const controls = ['blend','drift','rgb','rgbA','slices','shift','sort','sortDir','noise','scan','wave','seed'];
+controls.forEach(id=>{
+  $(id).addEventListener('input', e=>{
+    const v = $('v_'+id); if(v) v.textContent = e.target.value;
+    queue();
+  });
+});
+
+function queue(){
+  if(rafQueued) return;
+  rafQueued = true;
+  requestAnimationFrame(()=>{ rafQueued=false; render(); });
+}
+
+// ---- file loading ----
+$('file').addEventListener('change', e=> loadFiles(e.target.files));
+const stage = $('stage');
+['dragenter','dragover'].forEach(ev=> stage.addEventListener(ev, e=>{e.preventDefault(); stage.classList.add('dragover')}));
+['dragleave','drop'].forEach(ev=> stage.addEventListener(ev, e=>{e.preventDefault(); stage.classList.remove('dragover')}));
+stage.addEventListener('drop', e=> loadFiles(e.dataTransfer.files));
+
+function loadFiles(files){
+  [...files].filter(f=>f.type.startsWith('image/')).forEach(f=>{
+    const img = new Image();
+    img.onload = ()=>{ images.push({img, on:true}); refreshThumbs(); render(); };
+    img.src = URL.createObjectURL(f);
+  });
+}
+
+function refreshThumbs(){
+  const box = $('thumbs'); box.innerHTML='';
+  images.forEach((it,i)=>{
+    const d = document.createElement('div');
+    d.className = 'thumb'+(it.on?' on':'');
+    d.innerHTML = `<img src="${it.img.src}"><div class="x">×</div>`;
+    d.onclick = e=>{
+      if(e.target.classList.contains('x')){ images.splice(i,1); }
+      else { it.on = !it.on; }
+      refreshThumbs(); render();
+    };
+    box.appendChild(d);
+  });
+  $('drop').classList.toggle('hide', images.length>0);
+}
+
+function clearAll(){ images=[]; refreshThumbs(); ctx.clearRect(0,0,canvas.width,canvas.height); $('status').textContent='no images loaded'; }
+
+function randomize(){
+  $('seed').value = Math.floor(Math.random()*9999);
+  const rr = (a,b)=> Math.floor(a+Math.random()*(b-a));
+  $('drift').value = rr(0,160);
+  $('rgb').value   = rr(0,90);
+  $('rgbA').value  = rr(0,360);
+  $('slices').value= rr(0,60);
+  $('shift').value = rr(20,220);
+  $('sort').value  = Math.random()<.5 ? 0 : rr(60,200);
+  $('noise').value = rr(0,40);
+  $('scan').value  = Math.random()<.5 ? 0 : rr(20,70);
+  $('wave').value  = rr(0,35);
+  const blends=['difference','screen','exclusion','multiply','hard-light','lighten'];
+  $('blend').value = blends[rr(0,blends.length)];
+  controls.forEach(id=>{ const v=$('v_'+id); if(v) v.textContent=$(id).value; });
+  render();
+}
+
+// ---- main render ----
+function render(){
+  const active = images.filter(i=>i.on);
+  if(active.length===0){ ctx.clearRect(0,0,canvas.width,canvas.height); $('status').textContent='no images active'; return; }
+
+  reseed(+$('seed').value || 1);
+
+  // size canvas to first active image (cap for perf)
+  const base = active[0].img;
+  let W = base.naturalWidth, H = base.naturalHeight;
+  const cap = 1400;
+  if(Math.max(W,H) > cap){ const k = cap/Math.max(W,H); W=Math.round(W*k); H=Math.round(H*k); }
+  canvas.width = W; canvas.height = H;
+
+  // 1) composite the layers together
+  const drift = +$('drift').value;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.clearRect(0,0,W,H);
+  active.forEach((it,idx)=>{
+    ctx.globalCompositeOperation = idx===0 ? 'source-over' : $('blend').value;
+    const dx = idx===0 ? 0 : (srand()*2-1)*drift;
+    const dy = idx===0 ? 0 : (srand()*2-1)*drift;
+    ctx.drawImage(it.img, dx, dy, W, H);
+  });
+  ctx.globalCompositeOperation = 'source-over';
+
+  // 2) pixel-level effects
+  let imgData = ctx.getImageData(0,0,W,H);
+  if(+$('rgb').value>0)    rgbSplit(imgData, +$('rgb').value, +$('rgbA').value);
+  if(+$('sort').value>0)   pixelSort(imgData, +$('sort').value, $('sortDir').value);
+  if(+$('noise').value>0)  addNoise(imgData, +$('noise').value);
+  if(+$('scan').value>0)   scanlines(imgData, +$('scan').value);
+  ctx.putImageData(imgData,0,0);
+
+  // 3) geometry effects (drawn-back)
+  if(+$('slices').value>0 && +$('shift').value>0) sliceShift(W,H);
+  if(+$('wave').value>0) waveWarp(W,H,+$('wave').value);
+
+  $('status').textContent = `${W}×${H} · ${active.length} layer${active.length>1?'s':''} · seed ${$('seed').value}`;
+}
+
+function rgbSplit(d, amt, angleDeg){
+  const a = angleDeg*Math.PI/180;
+  const ox = Math.round(Math.cos(a)*amt), oy = Math.round(Math.sin(a)*amt);
+  const W=d.width, H=d.height, src=new Uint8ClampedArray(d.data), o=d.data;
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    const i=(y*W+x)*4;
+    const rx=Math.min(W-1,Math.max(0,x+ox)), ry=Math.min(H-1,Math.max(0,y+oy));
+    const bx=Math.min(W-1,Math.max(0,x-ox)), by=Math.min(H-1,Math.max(0,y-oy));
+    o[i]   = src[(ry*W+rx)*4];     // R shifted +
+    o[i+2] = src[(by*W+bx)*4+2];   // B shifted -
+  }
+}
+
+function pixelSort(d, thr, dir){
+  const W=d.width, H=d.height, p=d.data;
+  const lum=i=>0.299*p[i]+0.587*p[i+1]+0.114*p[i+2];
+  const lines = dir==='h'?H:W, len = dir==='h'?W:H;
+  for(let l=0;l<lines;l++){
+    let runStart=-1;
+    for(let k=0;k<=len;k++){
+      const i = dir==='h' ? (l*W+k)*4 : (k*W+l)*4;
+      const bright = k<len && lum(i)>thr;
+      if(bright && runStart<0) runStart=k;
+      if((!bright||k===len) && runStart>=0){
+        // sort the run by luminance
+        const seg=[];
+        for(let k2=runStart;k2<k;k2++){
+          const j = dir==='h' ? (l*W+k2)*4 : (k2*W+l)*4;
+          seg.push([p[j],p[j+1],p[j+2],p[j+3], 0.299*p[j]+0.587*p[j+1]+0.114*p[j+2]]);
+        }
+        seg.sort((a,b)=>a[4]-b[4]);
+        for(let k2=runStart, s=0;k2<k;k2++,s++){
+          const j = dir==='h' ? (l*W+k2)*4 : (k2*W+l)*4;
+          p[j]=seg[s][0]; p[j+1]=seg[s][1]; p[j+2]=seg[s][2];
+        }
+        runStart=-1;
+      }
+    }
+  }
+}
+
+function addNoise(d, amt){
+  const p=d.data, k=amt*2.55;
+  for(let i=0;i<p.length;i+=4){
+    const n=(srand()*2-1)*k;
+    p[i]+=n; p[i+1]+=n; p[i+2]+=n;
+  }
+}
+
+function scanlines(d, amt){
+  const W=d.width,H=d.height,p=d.data, dark=1-amt/140;
+  for(let y=0;y<H;y+=2) for(let x=0;x<W;x++){
+    const i=(y*W+x)*4; p[i]*=dark; p[i+1]*=dark; p[i+2]*=dark;
+  }
+}
+
+function sliceShift(W,H){
+  const n=+$('slices').value, max=+$('shift').value;
+  const snap = ctx.getImageData(0,0,W,H);
+  const tmp = document.createElement('canvas'); tmp.width=W; tmp.height=H;
+  tmp.getContext('2d').putImageData(snap,0,0);
+  for(let s=0;s<n;s++){
+    const y = Math.floor(srand()*H);
+    const h = Math.max(2, Math.floor(srand()*H/n));
+    const dx = Math.round((srand()*2-1)*max);
+    ctx.clearRect(0,y,W,h);
+    ctx.drawImage(tmp, 0,y,W,h, dx,y,W,h);
+    if(dx>0) ctx.drawImage(tmp, W-dx,y,dx,h, 0,y,dx,h);
+    else if(dx<0) ctx.drawImage(tmp, 0,y,-dx,h, W+dx,y,-dx,h);
+  }
+}
+
+function waveWarp(W,H,amp){
+  const snap=ctx.getImageData(0,0,W,H);
+  const tmp=document.createElement('canvas'); tmp.width=W; tmp.height=H;
+  tmp.getContext('2d').putImageData(snap,0,0);
+  ctx.clearRect(0,0,W,H);
+  const f = 0.01 + srand()*0.02;
+  for(let y=0;y<H;y++){
+    const dx = Math.sin(y*f)*amp;
+    ctx.drawImage(tmp, 0,y,W,1, dx,y,W,1);
+  }
+}
+
+function exportPNG(){
+  if(images.filter(i=>i.on).length===0){ alert('Load some images first.'); return; }
+  const a=document.createElement('a');
+  a.download = `pigeon-glitch-${$('seed').value}.png`;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+</script>
+</body>
+</html>

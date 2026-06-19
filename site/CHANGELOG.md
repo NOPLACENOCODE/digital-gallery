@@ -1,3 +1,7 @@
+## 2026-06-19 — Rename Crucifixion images (drop "black")
+- Renamed crucifixion-black-{3,4-zoom,5}.jpg → crucifixion-{3,4-zoom,5}.jpg
+- Updated script.js images array, bumped ARTWORK_ASSET_VERSION 139 → 140, script.js?v=167 → 168 in artworks.html
+
 # noplace_notime — Changelog
 
 Most recent change first. Add a new entry at the top after every session.
