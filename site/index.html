@@ -26,11 +26,16 @@
       justify-content: center;
     }
     .spin-video {
-      /* Video is cropped tight to the house (300x410), so very little white
-         padding; sized to match the original homepage logo. */
+      /* Cropped tight to the house (300x410); sized to match the original logo. */
       height: min(34vw, 132px);
       width: auto;
       display: block;
+      touch-action: manipulation;             /* no iOS double-tap-zoom delay */
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* 0.8x smaller on mobile */
+    @media (max-width: 600px) {
+      .spin-video { height: min(27.2vw, 106px); }
     }
     /* Tighten the gap between the logo and the menu. */
     .hero { gap: clamp(14px, 3vh, 26px); }
@@ -179,19 +184,68 @@
   </script>
 
   <script>
-    // Hero house. Desktop (mouse) gets the interactive <video>: a rAF loop
-    // scrubs currentTime to spin it, and clicking speeds it up + plays a
-    // "tink". Touch devices (phones) keep the animated WebP <img>, which loops
-    // on its own even in iOS Low Power Mode (a <video> there shows a play
-    // button). The WebP is also the no-JS fallback.
+    // Hero house. Desktop (mouse) gets the interactive <video> (a rAF loop
+    // scrubs currentTime; clicking speeds it up + "tink"). Touch devices get a
+    // <canvas> frame-sequence from a sprite sheet, which autoplays even in iOS
+    // Low Power Mode (where a <video> would show a play button) and supports
+    // tap-to-spin. The animated WebP <img> is the no-JS / load-failure fallback.
     (function () {
       const img = document.querySelector('img.spin-video');
       if (!img) return;
       const desktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
       if (!desktop) {
-        img.style.cursor = 'pointer';
-        img.addEventListener('click', () => { if (window.audioTink) window.audioTink(); });
+        // Mobile/touch: <canvas> frame-sequence from a sprite sheet. Autoplays
+        // in iOS Low Power Mode (rAF, not <video>) and supports tap-to-spin.
+        const FRAMES = 120, COLS = 12, ROWS = 10;
+        const LOOP_SECONDS = 4.5167;
+        const BUMP = 30, MAX = 80, DECAY = 2;
+        const sheet = new Image();
+        sheet.onload = () => {
+          const fw = sheet.naturalWidth / COLS, fh = sheet.naturalHeight / ROWS;
+          const canvas = document.createElement('canvas');
+          canvas.className = 'spin-video';
+          canvas.width = fw; canvas.height = fh;
+          canvas.setAttribute('role', 'img');
+          canvas.setAttribute('aria-label', img.getAttribute('alt') || '');
+          canvas.style.cursor = 'pointer';
+          img.replaceWith(canvas);
+
+          const ctx = canvas.getContext('2d');
+          let speed = 1, virtualT = 0, last = 0, lastIdx = -1;
+          const drawCell = (i) => {
+            const sx = (i % COLS) * fw, sy = Math.floor(i / COLS) * fh;
+            ctx.clearRect(0, 0, fw, fh);
+            ctx.drawImage(sheet, sx, sy, fw, fh, 0, 0, fw, fh);
+          };
+          const loop = (now) => {
+            if (!last) last = now;
+            const dt = Math.min((now - last) / 1000, 0.05); last = now;
+            virtualT = (virtualT + dt * speed) % LOOP_SECONDS;
+            speed = 1 + (speed - 1) * Math.exp(-DECAY * dt);
+            if (speed < 1.001) speed = 1;
+            const idx = Math.floor((virtualT / LOOP_SECONDS) * FRAMES) % FRAMES;
+            if (idx !== lastIdx) { drawCell(idx); lastIdx = idx; }
+            window.__houseSpinning = speed > 1.5;
+            requestAnimationFrame(loop);
+          };
+
+          // Tap anywhere in the hero to speed up (forgiving on mobile); ignore
+          // swipes/long-presses and let menu links navigate.
+          const hero = document.querySelector('.hero');
+          let dx = 0, dy = 0, dt0 = 0;
+          hero.addEventListener('pointerdown', (e) => { dx = e.clientX; dy = e.clientY; dt0 = Date.now(); });
+          hero.addEventListener('pointerup', (e) => {
+            if (e.target.closest('a')) return;
+            if (Math.hypot(e.clientX - dx, e.clientY - dy) > 12 || Date.now() - dt0 > 600) return;
+            if (window.audioTink) window.audioTink();
+            speed = Math.min(speed + BUMP, MAX);
+          });
+
+          drawCell(0);
+          requestAnimationFrame(loop);
+        };
+        sheet.src = 'assets/logo-spin-sprite.webp?v=1';
         return;
       }
 

@@ -1,3 +1,9 @@
+## 2026-06-19 — Mobile hero: canvas spin (autoplay in Low Power Mode + tap)
+- Desktop unchanged: interactive 60fps MP4 video (click house to speed up)
+- Mobile/touch now uses a <canvas> frame-sequence from a 120-frame sprite sheet (assets/logo-spin-sprite.webp, 270KB): autoplays even in iOS Low Power Mode (rAF, not <video>, so no play button) and tap anywhere in the hero speeds up the spin
+- House rendered 0.8x smaller on mobile (<=600px); added touch-action:manipulation
+- Animated WebP <img> kept as the no-JS / load-failure fallback
+
 ## 2026-06-19 — Hero: desktop video, mobile WebP
 - Desktop (hover+fine pointer) gets the interactive MP4 spin (rAF currentTime scrub, click = speed bump + tink)
 - Touch/mobile keeps the animated WebP <img> — loops even in iOS Low Power Mode, no play button; also the no-JS fallback
