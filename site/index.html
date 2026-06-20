@@ -33,9 +33,11 @@
       touch-action: manipulation;             /* no iOS double-tap-zoom delay */
       -webkit-tap-highlight-color: transparent;
     }
-    /* 0.8x smaller on mobile */
+    /* 0.8x smaller on mobile + enlarged invisible tap zone around the house */
     @media (max-width: 600px) {
       .spin-video { height: min(27.2vw, 106px); }
+      /* padding enlarges the tap target; negative margin keeps layout unchanged */
+      .spin-stage { padding: 26px; margin: -26px; }
     }
     /* Tighten the gap between the logo and the menu. */
     .hero { gap: clamp(14px, 3vh, 26px); }
@@ -230,13 +232,14 @@
             requestAnimationFrame(loop);
           };
 
-          // Tap anywhere in the hero to speed up (forgiving on mobile); ignore
-          // swipes/long-presses and let menu links navigate.
-          const hero = document.querySelector('.hero');
+          // Tap the house to speed up the spin. Listener is on .spin-stage,
+          // which is padded (see CSS) into an enlarged invisible hit zone so the
+          // small house is easy to hit; pointer events fire reliably on iOS
+          // (unlike click on a <canvas>). Ignore swipes/long-presses.
+          const stage = canvas.parentElement;
           let dx = 0, dy = 0, dt0 = 0;
-          hero.addEventListener('pointerdown', (e) => { dx = e.clientX; dy = e.clientY; dt0 = Date.now(); });
-          hero.addEventListener('pointerup', (e) => {
-            if (e.target.closest('a')) return;
+          stage.addEventListener('pointerdown', (e) => { dx = e.clientX; dy = e.clientY; dt0 = Date.now(); });
+          stage.addEventListener('pointerup', (e) => {
             if (Math.hypot(e.clientX - dx, e.clientY - dy) > 12 || Date.now() - dt0 > 600) return;
             if (window.audioTink) window.audioTink();
             speed = Math.min(speed + BUMP, MAX);

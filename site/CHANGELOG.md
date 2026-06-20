@@ -1,3 +1,7 @@
+## 2026-06-19 — Mobile hero: localize tap to the house
+- Tap-to-spin now triggers only on/near the house (an enlarged invisible zone via .spin-stage padding) instead of anywhere in the hero
+- Uses pointer events on the padded container (reliable on iOS, unlike click on a tiny <canvas>); negative margin keeps the layout from shifting
+
 ## 2026-06-19 — Mobile hero: canvas spin (autoplay in Low Power Mode + tap)
 - Desktop unchanged: interactive 60fps MP4 video (click house to speed up)
 - Mobile/touch now uses a <canvas> frame-sequence from a 120-frame sprite sheet (assets/logo-spin-sprite.webp, 270KB): autoplays even in iOS Low Power Mode (rAF, not <video>, so no play button) and tap anywhere in the hero speeds up the spin
