@@ -1,3 +1,7 @@
+## 2026-07-13 — Mark caballo-maniaco as sold
+- Added `soldOut: true` to "Un caballo maniaco un sábado cualquiera" in script.js
+- Bumped script.js?v=169 in artworks.html
+
 ## 2026-06-19 — Mobile hero: localize tap to the house
 - Tap-to-spin now triggers only on/near the house (an enlarged invisible zone via .spin-stage padding) instead of anywhere in the hero
 - Uses pointer events on the padded container (reliable on iOS, unlike click on a tiny <canvas>); negative margin keeps the layout from shifting
