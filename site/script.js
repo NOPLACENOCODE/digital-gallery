@@ -114,6 +114,7 @@ const works = [
     width: 180, height: 130,
     materials: 'Spray paint, acrylic, oil',
     price: '€2400',
+    soldOut: true,
     images: [
       'assets/works/caballo-maniaco.jpg',
       'assets/works/caballo-maniaco-1.webp',
