@@ -263,11 +263,14 @@ works.forEach((work) => {
   title.className = 'work-tile-title';
   title.textContent = `“${work.title.toUpperCase()}”`;
 
-  const price = document.createElement('div');
-  price.className = 'work-tile-price';
-  price.textContent = work.soldOut ? 'SOLD' : work.price;
+  tile.append(frame, title);
 
-  tile.append(frame, title, price);
+  if (work.soldOut) {
+    const status = document.createElement('div');
+    status.className = 'work-tile-price';
+    status.textContent = 'SOLD';
+    tile.append(status);
+  }
   tile.addEventListener('click', () => openWork(work));
   grid.appendChild(tile);
 });

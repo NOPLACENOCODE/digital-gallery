@@ -1,3 +1,8 @@
+## 2026-07-20 — Hide price on artwork grid, single-column mobile grid
+- Removed price from artwork grid tiles (script.js) — price now only shown inside the artwork modal. Grid tile still shows "SOLD" for sold-out works.
+- Mobile artwork grid (`.work-grid`) now shows 1 artwork per row instead of 2, so images take up more space. Desktop (>=720px) unchanged at 4 columns.
+- Bumped style.css?v=182 and script.js?v=170 in artworks.html
+
 ## 2026-07-13 — Mark caballo-maniaco as sold
 - Added `soldOut: true` to "Un caballo maniaco un sábado cualquiera" in script.js
 - Bumped script.js?v=169 in artworks.html
