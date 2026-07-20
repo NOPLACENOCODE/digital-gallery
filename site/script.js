@@ -1,6 +1,6 @@
 /* Cache-busting for artwork images. Bump this whenever a PNG/JPG/WebP under
    assets/works/ is edited in place — it forces browsers to refetch. */
-const ARTWORK_ASSET_VERSION = 140;
+const ARTWORK_ASSET_VERSION = 141;
 const vAsset = (url) => url ? `${url}?v=${ARTWORK_ASSET_VERSION}` : url;
 
 /* Topbar/hero behavior — only present on the home page */

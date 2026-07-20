@@ -1,3 +1,8 @@
+## 2026-07-20 — Crop Somni cover to remove baked-in transparent padding
+- `assets/works/somni-1.png` (the grid/modal cover) had ~86-140px of transparent padding baked into its 1600×1200 canvas. On the new mobile grid (which sizes tiles to the image's own dimensions instead of a fixed square) that padding showed up as extra white space on Somni's sides compared to other works.
+- Cropped the file tight to its non-transparent content (now 1483×931, matching the painting's real 218×135cm ratio) and bumped `ARTWORK_ASSET_VERSION` to 141 in script.js.
+- Bumped script.js?v=172 in artworks.html (ARTWORK_ASSET_VERSION changed).
+
 ## 2026-07-20 — Mobile artwork grid overhaul: no price, no grey frame, no SOLD tag, better spacing
 - Removed price from artwork grid tiles (script.js) — price now only shown inside the artwork modal.
 - Mobile artwork grid (`.work-grid`) now shows 1 artwork per row instead of 2, so images take up more space. Desktop (>=720px) unchanged at 4 columns.
