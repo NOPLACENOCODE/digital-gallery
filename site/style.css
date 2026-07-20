@@ -404,6 +404,35 @@ img { display: block; max-width: 100%; }
   background-color: #e0e0e0;
 }
 
+/* Mobile: drop the grey tile background — painting sits directly on white.
+   Frame also drops its forced square aspect-ratio so it hugs the image's own
+   shape instead of letterboxing — that letterboxing was the extra blank
+   space that pushed the title away from horizontal paintings. */
+@media (max-width: 719px) {
+  .work-grid {
+    gap: 48px;
+  }
+
+  .work-tile-frame {
+    background: none;
+    padding: 0;
+    aspect-ratio: auto;
+  }
+
+  .work-tile-frame img {
+    height: auto;
+  }
+
+  .work-tile:hover .work-tile-frame,
+  .work-tile:focus-visible .work-tile-frame {
+    background-color: transparent;
+  }
+
+  .work-tile-title {
+    margin-top: 10px;
+  }
+}
+
 .work-tile:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 4px;

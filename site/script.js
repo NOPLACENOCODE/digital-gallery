@@ -265,12 +265,6 @@ works.forEach((work) => {
 
   tile.append(frame, title);
 
-  if (work.soldOut) {
-    const status = document.createElement('div');
-    status.className = 'work-tile-price';
-    status.textContent = 'SOLD';
-    tile.append(status);
-  }
   tile.addEventListener('click', () => openWork(work));
   grid.appendChild(tile);
 });
