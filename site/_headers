@@ -1,0 +1,11 @@
+/dream/*
+  X-Robots-Tag: noindex, nofollow
+
+/dream/img/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/dream/video/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/dream/sfx/*
+  Cache-Control: public, max-age=31536000, immutable

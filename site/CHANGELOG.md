@@ -1,3 +1,20 @@
+## 2026-08-22 — DREAM02 beta published at /dream (unlisted)
+
+Deployed the DREAM02 generative instrument as an unlisted beta for tester feedback.
+
+**Assets optimised for the web (520MB → 96MB):**
+- 338 drawings PNG → WebP at q82 (78% smaller); alpha verified preserved via round-trip, so the transparent cutouts stay transparent
+- 66 dream clips re-encoded (640px cap, 24fps, crf30, audio dropped — they play muted); the 4 whose re-encode came out larger than the source keep the original
+- Excluded from the deploy: `video-sq/` (62MB) and `img/*.jpg` (~140MB), both entirely unreferenced by the code, plus `_deleted/`, `versions/`, `__pycache__/`, `photolab.html`
+- `site/_headers`: 1-year immutable cache on /dream media, X-Robots-Tag noindex on /dream
+
+**Production fixes (also improve local dev):**
+- Added the missing `<meta name="viewport">`
+- Small-screen notice under 900px — the fixed desktop rails overlap badly on phones, so it shows a message instead of a broken UI (and doesn't autoplay the intro behind it)
+- Figma overlay no longer eager-loads `figma-overlay.png` (404'd on every single page load); now fetched on first `O` press
+- Loop wall reads an explicit `WALL_LOOPS` list instead of probing loop1-8 × wav/m4a/mp3 — that blind probe fired 24 requests to find 4 files, logging ~20 404s per load
+- `refreshImages` 60s poller is now localhost-only (it exists for Photo Lab authoring; on a static deploy it was 2 requests/min per visitor forever)
+
 ## 2026-07-20 — Crop Somni cover to remove baked-in transparent padding
 - `assets/works/somni-1.png` (the grid/modal cover) had ~86-140px of transparent padding baked into its 1600×1200 canvas. On the new mobile grid (which sizes tiles to the image's own dimensions instead of a fixed square) that padding showed up as extra white space on Somni's sides compared to other works.
 - Cropped the file tight to its non-transparent content (now 1483×931, matching the painting's real 218×135cm ratio) and bumped `ARTWORK_ASSET_VERSION` to 141 in script.js.
