@@ -39,6 +39,18 @@
         display:flex; align-items:center; justify-content:center;}
   #gate.closed{display:none;}
   #introVid{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
+  /* Browsers refuse unmuted autoplay until the user has interacted, so the piece opens on a
+     click screen: that one gesture is what lets the intro (and the fan loop) play with sound. */
+  #gateStart{position:absolute; inset:0; z-index:2; display:none; align-items:center;
+             justify-content:center; cursor:pointer; font-family:"Times New Roman",Times,serif;}
+  #gate.start #gateStart{display:flex;}
+  #gate.start #introVid{display:none;}
+  #gateStart .gs-t{font-size:15px; color:#e00000;}
+  /* the prompt sits over the still-running loop (fan turning), not a frozen last frame */
+  #gateLoop{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+            object-position:center 65%; display:none;}
+  #gate.showprompt #gateLoop{display:block;}
+  #gate.showprompt #introVid{display:none;}
   #gatePrompt{position:absolute; left:50%; top:calc(28% + 75px); transform:translate(-50%,-50%); z-index:1; display:none;
              flex-direction:column; align-items:center; gap:10px;
              font-family:"Times New Roman",Times,serif;}
@@ -422,6 +434,8 @@
 
 <div id="gate">
   <video id="introVid" src="video/intro.mp4" playsinline></video>
+  <video id="gateLoop" src="video/loop-bg.mp4" loop playsinline></video>
+  <div id="gateStart"><div class="gs-t">click to begin</div></div>
   <div id="gatePrompt">
     <div class="gate-q">start dreaming?</div>
     <button id="gateEnter">yes</button>
@@ -2980,6 +2994,8 @@ if (/[?&]mood\b/.test(location.search)) {
   const vid = document.getElementById('introVid');
   const bg = document.getElementById('bgloop');
   const enterBtn = document.getElementById('gateEnter');
+  const gateLoop = document.getElementById('gateLoop');
+  const startScreen = document.getElementById('gateStart');
   const skipIntro = new URLSearchParams(location.search).has('skip');
   // too small to run the instrument: #smallscreen covers everything, so don't start the
   // intro underneath it — otherwise its audio plays behind a screen nobody can interact with.
@@ -2999,6 +3015,7 @@ if (/[?&]mood\b/.test(location.search)) {
     });
     startCvReveal();                                  // dream-circle grows from near-nothing, pulsing on each heartbeat
 
+    gateLoop.pause();
     bg.muted = true;                                  // back inside the dream — the instrument's own sound takes over
     bg.play().catch(() => {});
     if (!AC) buildAudio();                            // real click gesture — safe to start audio here
@@ -3039,41 +3056,32 @@ if (/[?&]mood\b/.test(location.search)) {
   if (skipIntro) {
     enter();
   } else {
-    // Browsers block unmuted autoplay without a prior user gesture — try for sound,
-    // fall back to muted, and unmute the moment the user so much as touches the page.
-    vid.muted = false;
-    vid.play().catch(() => {
-      vid.muted = true;
-      vid.play().catch(() => {});
-      const unmute = () => {
-        if (!vid.ended) { vid.muted = false; }
-        removeEventListener('pointerdown', unmute);
-        removeEventListener('keydown', unmute);
-      };
-      addEventListener('pointerdown', unmute, { once: true });
-      addEventListener('keydown', unmute, { once: true });
+    // Open on the click screen. Autoplaying here would be silent — browsers block unmuted
+    // autoplay until the user interacts — so wait for one real gesture, then start with sound.
+    gate.classList.add('start');
+    let begun = false;
+    const begin = () => {
+      if (begun) return;
+      begun = true;
+      gate.classList.remove('start');
+      vid.currentTime = 0;
+      vid.muted = false;
+      vid.play().catch(() => { vid.muted = true; vid.play().catch(() => {}); });
+    };
+    startScreen.addEventListener('click', begin);
+    addEventListener('keydown', e => {
+      if (gate.classList.contains('start')) { e.preventDefault(); begin(); }
     });
 
     let promptShown = false;
     function showPrompt() {
       if (promptShown) return;
       promptShown = true;
-      vid.pause();                                    // hold on this frame — the boy, found
-      gate.classList.add('showprompt');
-
-      // the ambient loop starts playing (with sound) behind the prompt, rather than sitting silent
-      bg.muted = false;
-      bg.play().catch(() => {
-        bg.muted = true;
-        bg.play().catch(() => {});
-        const unmuteBg = () => {
-          bg.muted = false;
-          removeEventListener('pointerdown', unmuteBg);
-          removeEventListener('keydown', unmuteBg);
-        };
-        addEventListener('pointerdown', unmuteBg, { once: true });
-        addEventListener('keydown', unmuteBg, { once: true });
-      });
+      vid.pause();
+      gate.classList.add('showprompt');   // swaps the frozen intro frame for the running loop
+      // the room keeps living behind the question: fan turning, its own sound
+      gateLoop.muted = false;
+      gateLoop.play().catch(() => { gateLoop.muted = true; gateLoop.play().catch(() => {}); });
     }
     vid.addEventListener('timeupdate', () => {
       if (vid.duration && vid.currentTime >= vid.duration - 2) showPrompt();   // prompt appears 2s before the clip would actually end
