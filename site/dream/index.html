@@ -48,14 +48,6 @@
              background:radial-gradient(ellipse at center,
                         rgba(0,0,0,.35) 0%, rgba(0,0,0,.72) 45%, rgba(0,0,0,.93) 100%);}
   #gate.start #gateStart{display:flex;}
-  /* The homepage logo is baked on an opaque white card (it lives on a white page). Inverting
-     turns that card black and the house pale; screen blending then drops the black entirely,
-     so the house floats on the dark frame without a visible box around it. */
-  #gateStart .gs-logo{width:min(30vh,230px); height:auto; display:block;
-                      filter:invert(1); mix-blend-mode:screen;
-                      animation:gsFloat 6s ease-in-out infinite;}
-  @keyframes gsFloat{0%,100%{transform:translateY(-5px);} 50%{transform:translateY(5px);}}
-  @media (prefers-reduced-motion:reduce){ #gateStart .gs-logo{animation:none;} }
   #gateStart .gs-t{font-size:15px; color:#e00000;}
   #gateBegin{font-family:"Times New Roman",Times,serif; font-size:13px; font-weight:400;
              padding:3px 18px; border:1px solid #888; border-radius:0;
@@ -451,7 +443,6 @@
   <video id="introVid" src="video/intro.mp4" poster="video/intro-poster.jpg" preload="auto" playsinline></video>
   <video id="gateLoop" src="video/loop-bg.mp4?v=2" loop playsinline></video>
   <div id="gateStart">
-    <img class="gs-logo" src="assets/logo-spin.webp" alt="" aria-hidden="true">
     <div class="gs-t">best with sound on</div>
     <button id="gateBegin">begin</button>
   </div>
