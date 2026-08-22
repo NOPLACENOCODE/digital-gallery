@@ -1,3 +1,6 @@
+# NOTE: media below is served immutable for a year. Cloudflare will keep serving a
+# cached copy even after the file changes, so bump the ?v=N on its <video>/<img> src
+# in dream/index.html whenever one of these is re-encoded.
 /dream/*
   X-Robots-Tag: noindex, nofollow
 
