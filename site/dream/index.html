@@ -26,8 +26,12 @@
   #bgloop{position:fixed; inset:0; width:100%; height:100%; object-fit:cover; object-position:center 65%; z-index:0; pointer-events:none;}
   #app{position:relative; z-index:1;}
   /* lightning in the room — above the video, under the panels */
-  #thunderflash{position:fixed; inset:0; z-index:2; pointer-events:none; background:#eef2ff; opacity:0;
-                mix-blend-mode:screen;}
+  /* light thrown from the window rather than a flat white wash over everything */
+  #thunderflash{position:fixed; inset:0; z-index:2; pointer-events:none; opacity:0;
+                mix-blend-mode:screen;
+                background:radial-gradient(ellipse 75% 60% at 50% 32%,
+                           rgba(228,238,255,.98) 0%, rgba(186,203,238,.55) 45%,
+                           rgba(120,140,185,.12) 72%, rgba(90,105,140,0) 100%);}
   /* The instrument is a fixed-width desktop layout (chords rail + mid rail + right rail).
      Below ~900px those rails overlap and the piece is unusable, so show a notice instead. */
   #smallscreen{display:none;}
@@ -984,18 +988,26 @@ function updateModePanel() {
   modeAutoBtn.textContent = P.mode.manual ? 'MANUAL' : 'AUTO';
 }
 // ---------------- pixel weather animation ----------------
-let lastThunderAt = -1e9;                 // set by the thunder event; drives both flashes
+let lastThunderAt = -1e9;                 // seeds the bolt shape in the weather panel
+let thunderStrokes = [];                  // [{at, amp, dur}] — the flicker of one strike
 let flashEl = null;
-function thunderFlashAmount() {           // 1 -> 0 over ~320ms, with a double blink like real lightning
-  const dt = performance.now() - lastThunderAt;
-  if (dt < 0 || dt > 320) return 0;
-  const a = 1 - dt / 320;
-  return dt < 40 ? a : (dt < 90 ? a * .35 : a * (dt < 150 ? .9 : .5));
+// A strike is 1-3 return strokes: each snaps on instantly and falls away fast, with dark
+// gaps between. That stutter is what reads as lightning; a single smooth fade never does.
+function thunderFlashAmount() {
+  const now = performance.now();
+  let v = 0;
+  for (let i = 0; i < thunderStrokes.length; i++) {
+    const st = thunderStrokes[i], dt = now - st.at;
+    if (dt < 0 || dt > st.dur) continue;
+    const k = 1 - dt / st.dur;
+    v = Math.max(v, st.amp * (dt < 14 ? 1 : k * k));   // instant attack, square-law decay
+  }
+  return v;
 }
 function drawThunderFlash() {
   if (!flashEl) flashEl = document.getElementById('thunderflash');
   if (!flashEl) return;
-  flashEl.style.opacity = (thunderFlashAmount() * .5).toFixed(3);
+  flashEl.style.opacity = (thunderFlashAmount() * .78).toFixed(3);
 }
 let wxCv2 = null, wxCtx2 = null;
 function drawWeatherAnim() {
@@ -2494,11 +2506,9 @@ function atmosEvent(kind, lvl) {           // one-shot nature events, all synthe
       s.connect(f); f.connect(g); g.connect(ATMOS.bus); s.start(t + .04 + Math.random() * .2);
     }
   } else if (kind === 'thunder') {
-    lastThunderAt = performance.now();                 // drives the lightning flash, see drawWeatherAnim
     const dur = 2.2 + Math.random() * 2.5;
-    const near = Math.random() < .45;                  // some strikes are close and sharp, some distant
+    const near = Math.random() < .45;                  // close strikes are sharp and immediate
     const delay = near ? .02 : .12 + Math.random() * .5;
-    // three layers: a bright crack you can hear on any speaker, a mid body, and the sub rumble
     const layer = (filt, freq, q, peak, atk, rel, startAt) => {
       const s = AC.createBufferSource(); s.buffer = ATMOS.noise; s.loop = true;
       const f = AC.createBiquadFilter(); f.type = filt; f.frequency.value = freq; if (q) f.Q.value = q;
@@ -2509,9 +2519,23 @@ function atmosEvent(kind, lvl) {           // one-shot nature events, all synthe
       g.gain.setTargetAtTime(0, t + startAt + atk, rel);
       s.start(t + startAt); s.stop(t + startAt + dur + 1.2);
     };
-    layer('bandpass', near ? 2200 : 1300, .7, near ? .55 : .22, .006, .18, delay);   // crack
-    layer('lowpass',  near ? 900  : 520,  0,  near ? .70 : .40, .05,  .55, delay + .01);  // body
-    layer('lowpass',  130, 0, 1.1, .12, dur / 3, delay + .03);                       // rumble
+
+    // 1-3 return strokes. The same pattern drives the crack you hear and the flicker you
+    // see, so a double strike looks and sounds like one event.
+    const strokes = 1 + (Math.random() < .55 ? 1 : 0) + (Math.random() < .28 ? 1 : 0);
+    lastThunderAt = performance.now();
+    thunderStrokes = [];
+    let off = 0;
+    for (let i = 0; i < strokes; i++) {
+      const amp = i === 0 ? 1 : .35 + Math.random() * .5;
+      thunderStrokes.push({ at: lastThunderAt + delay * 1000 + off, amp,
+                            dur: 45 + Math.random() * 70 });
+      // each stroke gets its own crack + body; only the first carries the full weight
+      layer('bandpass', near ? 2200 : 1300, .7, (near ? 1.7 : .8) * amp, .006, .18, delay + off / 1000);
+      layer('lowpass',  near ? 900  : 520,  0,  (near ? 2.0 : 1.2) * amp, .05,  .55, delay + off / 1000 + .01);
+      off += 55 + Math.random() * 130;
+    }
+    layer('lowpass', 130, 0, 2.6, .12, dur / 3, delay + .03);        // one long rumble under it all
   } else if (kind === 'bubble') {
     const o = AC.createOscillator(); o.type = 'sine';
     const f0 = 260 + Math.random() * 520;
