@@ -1211,18 +1211,73 @@ function seqStopRec() {
 function seqRecordPress(i) {
   if (!seqRec) return;
   const elapsed = beatPos - seqRecT0;
-  const slot = Math.round(elapsed / CHORD_BEATS) % CHORD_SEQ.length;
+  // clamp instead of %: rounding up at the very end used to wrap to 0 and overwrite step 1
+  const slot = Math.max(0, Math.min(CHORD_SEQ.length - 1, Math.round(elapsed / SLOT_BEATS)));
   CHORD_SEQ[slot] = i;
   seqPaint();
 }
+// ---------------- free-form looper (default mode) ----------------
+// Records exact chord on/off times against beatPos, so it keeps your phrasing and follows
+// DREAM PACE. Playback walks a pointer through a sorted list rather than rescanning it, and
+// every note the loop turns on is tracked so the seam can never leave one stuck.
+const FLOOP = { state: 'idle', ev: [], len: 0, t0: 0, ptr: 0, prev: -1, held: new Set(), self: false };
+function floopRelease() { FLOOP.held.forEach(i => setChord(i, false)); FLOOP.held.clear(); }
+function floopClear() {
+  floopRelease();
+  FLOOP.ev = []; FLOOP.len = 0; FLOOP.ptr = 0; FLOOP.prev = -1; FLOOP.state = 'idle';
+  seqPaint();
+}
+function floopToggle() {
+  if (FLOOP.state === 'idle') {
+    chordAuto = false;                                  // record you, not the progression
+    if (chordSeqStep >= 0) setChord(chordSeqStep, false);
+    chordSeqStep = -1; chordSeqSlot = -1;
+    FLOOP.ev = []; FLOOP.t0 = beatPos; FLOOP.state = 'rec';
+  } else if (FLOOP.state === 'rec') {
+    if (!FLOOP.ev.length) { floopClear(); return; }
+    FLOOP.len = Math.max(2, Math.round(Math.max(1, beatPos - FLOOP.t0)));
+    // close any chord still down, so playback always has a matching release
+    chordsHeld.forEach(i => FLOOP.ev.push({ at: FLOOP.len - 0.001, i, on: false }));
+    FLOOP.ev.sort((a, b) => a.at - b.at);
+    FLOOP.ptr = 0; FLOOP.prev = -1; FLOOP.state = 'play';
+  } else {
+    floopClear(); return;
+  }
+  seqPaint();
+}
+function floopRecord(i, on) {
+  if (FLOOP.state === 'rec' && !FLOOP.self) FLOOP.ev.push({ at: beatPos - FLOOP.t0, i, on });
+}
+function floopTick() {
+  if (FLOOP.state !== 'play' || !playing || histIndex !== null || !FLOOP.len) return;
+  const pos = (((beatPos - FLOOP.t0) % FLOOP.len) + FLOOP.len) % FLOOP.len;
+  const fire = e => { FLOOP.self = true; setChord(e.i, e.on); FLOOP.self = false;
+                      if (e.on) FLOOP.held.add(e.i); else FLOOP.held.delete(e.i); };
+  if (FLOOP.prev < 0) { FLOOP.prev = pos; FLOOP.ptr = 0; }
+  if (pos < FLOOP.prev) {                               // wrapped
+    while (FLOOP.ptr < FLOOP.ev.length) fire(FLOOP.ev[FLOOP.ptr++]);
+    floopRelease();                                     // belt and braces: nothing survives the seam
+    FLOOP.ptr = 0;
+  }
+  while (FLOOP.ptr < FLOOP.ev.length && FLOOP.ev[FLOOP.ptr].at <= pos) fire(FLOOP.ev[FLOOP.ptr++]);
+  FLOOP.prev = pos;
+}
 function seqRecTick() {                           // one pass round the bar, then it plays
-  if (seqRec && beatPos - seqRecT0 >= CHORD_BEATS * CHORD_SEQ.length) seqStopRec();
+  if (seqRec && beatPos - seqRecT0 >= SLOT_BEATS * CHORD_SEQ.length) seqStopRec();
 }
 const CHORD_BEATS = 8;           // DREAM-PACE beats each chord rings before advancing
-// The looped progression, now editable. -1 = rest. Defaults to 1-2-3-4-5, which is what
-// AUTO stepped through before, so the piece sounds unchanged until you edit it.
-let CHORD_SEQ = [0, 1, 2, 3, 4];
-const SEQ_MAX = 8;
+// The looped progression, editable. -1 = rest, -2 = hold (let the previous chord ring on).
+// ?loop=grid switches REC from free-form recording to the finer quantised grid, so the two
+// approaches can be compared side by side.
+const LOOPMODE  = /[?&]loop=grid\b/.test(location.search) ? 'grid' : 'free';
+const SEQ_HOLD  = -2, SEQ_REST = -1;
+// grid mode halves the slot so fast playing lands on its own step; the default pattern uses
+// HOLD between chords, which sounds identical to the old 1-2-3-4-5 at full-length slots.
+const SLOT_BEATS = LOOPMODE === 'grid' ? CHORD_BEATS / 2 : CHORD_BEATS;
+let CHORD_SEQ = LOOPMODE === 'grid'
+  ? [0, SEQ_HOLD, 1, SEQ_HOLD, 2, SEQ_HOLD, 3, SEQ_HOLD, 4, SEQ_HOLD]
+  : [0, 1, 2, 3, 4];
+const SEQ_MAX = LOOPMODE === 'grid' ? 16 : 8;
 function chordGoodFactor() { return 1; }   // chords play at full strength across the whole GOOD/BAD range (for now)
 function chordRuinAmount() { return clamp01(CHORDFX.ruin + (P.char ? P.char.norm : 0) * 0.55); }   // BAD dream adds sunn-style drive on top of RUIN
 function chordVerbAmount() { return CHORDFX.reverb * lerp(1, 0.5, P.char ? P.char.norm : 0); }     // BAD dream pulls reverb back — drier, rawer
@@ -1335,8 +1390,8 @@ function arpTick() {
   const cvS = document.createElement('canvas'); cvS.className = 'cstrings'; cvS.id = 'stringsCv';
   let pressed = -1;
   const idxFromEv = e => { const r = cvS.getBoundingClientRect(); return Math.max(0, Math.min(4, Math.floor((e.clientX - r.left) / r.width * 5))); };
-  cvS.addEventListener('pointerdown', e => { e.preventDefault(); cvS.setPointerCapture(e.pointerId); pressed = idxFromEv(e); if (!seqRec) chordManual(); seqRecordPress(pressed); setChord(pressed, true); });
-  cvS.addEventListener('pointerup', () => { if (pressed >= 0) setChord(pressed, false); pressed = -1; });
+  cvS.addEventListener('pointerdown', e => { e.preventDefault(); cvS.setPointerCapture(e.pointerId); pressed = idxFromEv(e); if (!seqRec && FLOOP.state !== 'rec') chordManual(); seqRecordPress(pressed); floopRecord(pressed, true); setChord(pressed, true); });
+  cvS.addEventListener('pointerup', () => { if (pressed >= 0) { floopRecord(pressed, false); setChord(pressed, false); } pressed = -1; });
   cvS.addEventListener('pointercancel', () => { if (pressed >= 0) setChord(pressed, false); pressed = -1; });
   host.appendChild(cvS);
 
@@ -1356,21 +1411,33 @@ function arpTick() {
     while (seqRow.children.length < CHORD_SEQ.length) {
       const idx = seqRow.children.length;
       const cell = document.createElement('button'); cell.className = 'cseq-cell';
-      cell.onclick = () => {                       // 1..5 -> rest -> 1..
-        CHORD_SEQ[idx] = CHORD_SEQ[idx] >= CHORD_NOTES.length - 1 ? -1 : CHORD_SEQ[idx] + 1;
+      cell.onclick = () => {                       // 1..5 -> rest -> hold -> 1..
+        const v = CHORD_SEQ[idx];
+        CHORD_SEQ[idx] = v === SEQ_HOLD ? 0
+                       : v === SEQ_REST ? SEQ_HOLD
+                       : v >= CHORD_NOTES.length - 1 ? SEQ_REST : v + 1;
         seqPaint();
       };
       seqRow.appendChild(cell);
     }
     [...seqRow.children].forEach((c, i) => {
-      c.textContent = CHORD_SEQ[i] < 0 ? '\u00B7' : (CHORD_SEQ[i] + 1);
-      c.classList.toggle('rest', CHORD_SEQ[i] < 0);
+      const v = CHORD_SEQ[i];
+      c.textContent = v === SEQ_HOLD ? '\u2013' : v === SEQ_REST ? '\u00B7' : (v + 1);
+      c.classList.toggle('rest', v < 0);
       c.classList.toggle('now', chordAuto && i === chordSeqSlot);
       c.title = 'step ' + (i + 1);
     });
-    lenLbl.textContent = seqRec ? 'recording\u2026' : CHORD_SEQ.length + ' steps';
+    const recing = seqRec || FLOOP.state === 'rec';
+    const looping = FLOOP.state === 'play';
+    lenLbl.textContent = recing ? 'recording\u2026'
+                       : looping ? 'loop \u25CF ' + FLOOP.len + ' beats'
+                       : CHORD_SEQ.length + ' steps';
     const rb = host.querySelector('.crec');
-    if (rb) { rb.classList.toggle('armed', seqRec); rb.textContent = seqRec ? 'Stop' : 'Rec'; }
+    if (rb) {
+      rb.classList.toggle('armed', recing);
+      rb.classList.toggle('lit', looping);
+      rb.textContent = recing ? 'Stop' : looping ? 'Clear' : 'Rec';
+    }
     const ab = host.querySelector('.cauto:not(.crec)');
     if (ab) ab.classList.toggle('lit', chordAuto);
   };
@@ -1386,8 +1453,11 @@ function arpTick() {
     if (!chordAuto && chordSeqStep >= 0) { setChord(chordSeqStep, false); } chordSeqStep = -1; chordSeqSlot = -1;
   };
   const rec = document.createElement('button'); rec.className = 'cauto crec';
-  rec.textContent = 'Rec'; rec.title = 'play the chords in — they land on the grid, one pass round';
-  rec.onclick = () => { seqRec ? seqStopRec() : seqStartRec(); };
+  rec.textContent = 'Rec';
+  rec.title = LOOPMODE === 'grid'
+    ? 'play the chords in — they snap to the grid, one pass round'
+    : 'record your chord playing and loop it — press again to stop, again to clear';
+  rec.onclick = () => { LOOPMODE === 'grid' ? (seqRec ? seqStopRec() : seqStartRec()) : floopToggle(); };
   const btnRow = document.createElement('div'); btnRow.className = 'crow';
   btnRow.append(auto, rec);
   host.appendChild(btnRow);
@@ -2815,17 +2885,21 @@ function audioUpdate() {
     });
   }
   if (chordAuto && playing && histIndex === null) {                // auto-play the progression, looping
-    const slot = Math.floor(beatPos / CHORD_BEATS) % CHORD_SEQ.length;
+    const slot = Math.floor(beatPos / SLOT_BEATS) % CHORD_SEQ.length;
     if (slot !== chordSeqSlot) {
-      if (chordSeqStep >= 0) setChord(chordSeqStep, false);   // release whatever was ringing
       chordSeqSlot = slot;
-      chordSeqStep = CHORD_SEQ[slot];                          // -1 = rest, nothing sounds
-      if (chordSeqStep >= 0) setChord(chordSeqStep, true);
+      const v = CHORD_SEQ[slot];
+      if (v !== SEQ_HOLD) {                                    // HOLD leaves the chord ringing
+        if (chordSeqStep >= 0) setChord(chordSeqStep, false);
+        chordSeqStep = v;
+        if (v >= 0) setChord(v, true);
+      }
       seqPaint();
     }
   }
 
   seqRecTick();
+  floopTick();
   atmosUpdate(t);                                               // weather beds follow the current atmosphere
 
   chaosLurch *= .88;                                            // pitch lurches recover on their own
@@ -3199,10 +3273,10 @@ addEventListener('keydown', e => {
   if (!e.ctrlKey && !e.metaKey && !e.altKey) {
     const lk = LAUNCHER_KEYS.find(k => e.key.toLowerCase() === k.key);
     if (lk) { e.preventDefault(); toggleLauncher(lk); }
-    if (e.code in CHORD_KEYMAP && !e.repeat) { e.preventDefault(); if (!seqRec) chordManual(); seqRecordPress(CHORD_KEYMAP[e.code]); setChord(CHORD_KEYMAP[e.code], true); }
+    if (e.code in CHORD_KEYMAP && !e.repeat) { e.preventDefault(); if (!seqRec && FLOOP.state !== 'rec') chordManual(); seqRecordPress(CHORD_KEYMAP[e.code]); floopRecord(CHORD_KEYMAP[e.code], true); setChord(CHORD_KEYMAP[e.code], true); }
   }
 });
-addEventListener('keyup', e => { if (e.code in CHORD_KEYMAP) setChord(CHORD_KEYMAP[e.code], false); });
+addEventListener('keyup', e => { if (e.code in CHORD_KEYMAP) { floopRecord(CHORD_KEYMAP[e.code], false); setChord(CHORD_KEYMAP[e.code], false); } });
 
 // ▲▼ tempo (rewind now keyboard-only: ArrowLeft/ArrowRight)
 function nudgeTempo(d) {
