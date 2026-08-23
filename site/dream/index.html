@@ -112,6 +112,12 @@
   .knob .readout{font-size:9px; color:var(--mut); margin-top:1px; min-height:11px;}
   .knob.manual .readout{color:var(--ink); font-weight:700;}
 
+  /* The instrument is laid out in fixed pixels against a ~2000x1125 design. On a smaller
+     window everything crowds the circle (which is why it only looked right at 75% browser
+     zoom), so scale the whole chrome to fit instead. The gate and the small-screen notice
+     are deliberately excluded — they're centred text and should stay at natural size. */
+  :root{ --ui-zoom:1; }
+  #app, #statusbox, #chords, #midRail, #rightRail, #knobring, #bottombar{ zoom:var(--ui-zoom); }
   #rightRail{position:fixed; right:20px; top:0; bottom:0; z-index:20; width:250px; padding:10px 0;
              display:flex; flex-direction:column; justify-content:center; align-items:stretch; gap:8px; overflow:hidden;}
   #midRail{position:fixed; left:198px; top:0; bottom:0; z-index:15; width:158px; padding:10px 0;
@@ -2770,6 +2776,15 @@ function drawLinks() {
 // measuring code from before that layout existed; removed since they fought the new flex rails.
 // The DREAM + WEATHER squares are the only flexible-sized elements in the rail, so on a short
 // window they're what shrinks to guarantee the whole row still fits without clipping.
+// Match the proportions of the design the layout was tuned at, whatever the window size,
+// so it looks the same for everyone instead of only at 75% browser zoom.
+const UI_DESIGN_W = 2000, UI_DESIGN_H = 1125;
+function fitUiScale() {
+  if (matchMedia('(max-width:899px)').matches) return;   // notice is up; nothing to scale
+  const z = Math.min(innerWidth / UI_DESIGN_W, innerHeight / UI_DESIGN_H);
+  // floor so labels never shrink to unreadable on a small laptop, cap so it doesn't bloat
+  document.documentElement.style.setProperty('--ui-zoom', Math.max(0.68, Math.min(1.25, z)).toFixed(3));
+}
 function fitRightRail() {
   const rail = document.getElementById('rightRail'), modes = document.getElementById('modes'),
         dm = document.getElementById('dreammatrix'), dp = document.getElementById('dreampace'),
@@ -2782,9 +2797,11 @@ function fitRightRail() {
   const side = Math.max(80, Math.min(226, Math.floor(availableForSquares / 2)));
   wx.style.width = wx.style.height = pad.style.width = pad.style.height = side + 'px';
 }
-addEventListener('resize', () => { drawLinks(); fitRightRail(); });
+addEventListener('resize', () => { fitUiScale(); drawLinks(); fitRightRail(); positionKnobRing(); });
 setTimeout(drawLinks, 60); setTimeout(drawLinks, 400);
-fitRightRail(); setTimeout(fitRightRail, 60); setTimeout(fitRightRail, 400);
+fitUiScale();
+fitRightRail(); setTimeout(() => { fitUiScale(); fitRightRail(); }, 60);
+setTimeout(() => { fitUiScale(); fitRightRail(); }, 400);
 
 // ---------------- Figma onion-skin overlay ----------------
 (function figmaOverlay() {
