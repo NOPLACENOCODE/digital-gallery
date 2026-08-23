@@ -278,7 +278,30 @@
              box-shadow:0 0 10px -8px color-mix(in srgb, var(--ui-accent) 55%, transparent);}
   #statusbox .st-label{font-size:9px; letter-spacing:2px; text-transform:uppercase; color:color-mix(in srgb, var(--ui-accent) 78%, #fff 22%);
              text-shadow:0 0 8px color-mix(in srgb, var(--ui-accent) 55%, transparent);}
+  #statusbox .st-head{display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;}
+  #btnInfo{flex:0 0 auto; width:15px; height:15px; padding:0; border-radius:50%;
+           border:1px solid color-mix(in srgb, var(--ui-accent) 55%, transparent);
+           background:transparent; color:color-mix(in srgb, var(--ui-accent) 80%, #fff 20%);
+           font-family:"Times New Roman",Times,serif; font-size:11px; line-height:1; cursor:pointer;}
+  #btnInfo:hover{background:var(--ui-accent); color:#12100c;}
   #statusbox .st-btns{display:flex; gap:6px; width:100%;}
+
+  /* Flat overlay in the gate's voice. Deliberately a body child, not inside #app, so the
+     instrument's --ui-zoom doesn't shrink the reading text. */
+  #info{position:fixed; inset:0; z-index:99000; display:flex; align-items:center;
+        justify-content:center; padding:24px; background:rgba(0,0,0,.82);
+        font-family:"Times New Roman",Times,serif;}
+  #info[hidden]{display:none;}
+  #infoCard{max-width:52ch; max-height:100%; overflow-y:auto; color:#b9b2a4; font-size:13px; line-height:1.65;}
+  #infoCard .if-h{color:#e00000; font-size:15px; margin:0 0 8px;}
+  #infoCard .if-h + *{margin-top:0;}
+  #infoCard .if-p{margin:0 0 22px;}
+  #infoCard .if-keys{display:grid; grid-template-columns:auto 1fr; gap:4px 16px; margin:0 0 18px;}
+  #infoCard .if-keys dt{color:#e0d8c8; white-space:nowrap;}
+  #infoCard .if-keys dd{margin:0;}
+  #infoClose{font-family:"Times New Roman",Times,serif; font-size:13px; padding:3px 18px;
+             border:1px solid #888; border-radius:0; background:#c8c8c8; color:#000; cursor:pointer;}
+  #infoClose:hover{background:#b0b0b0;}
   #statusbox .tbtn{flex:1; padding:7px 4px; font-size:9px;}
   .door-ic{vertical-align:-1px; margin-right:1px;}
   #chords{position:fixed; left:20px; top:92px; bottom:16px; z-index:20; width:164px;
@@ -349,9 +372,10 @@
   .aslid{width:17px; height:40px; border:1px solid var(--line2); border-radius:2px; position:relative; cursor:ns-resize; touch-action:none; overflow:hidden;}
   .afill{position:absolute; left:0; right:0; bottom:0; background:var(--ink);}
   .albl{font-size:9px; letter-spacing:.5px; text-transform:uppercase; color:var(--mut);}
-  .xy{width:66px; height:66px; border:1px solid var(--line2); border-radius:3px; margin:8px auto 0; position:relative; cursor:crosshair; touch-action:none;}
-  .xydot{position:absolute; width:9px; height:9px; border-radius:50%; background:var(--ink); transform:translate(-50%,-50%); pointer-events:none; left:0; top:0;}
-  .xyl{position:absolute; font-size:8px; letter-spacing:.5px; text-transform:uppercase; color:var(--mut); pointer-events:none;}
+  /* fills the Shape panel's inner width (158 - 20 padding); grows downward, never wider */
+  .xy{width:138px; height:138px; border:1px solid var(--line2); border-radius:3px; margin:8px auto 0; position:relative; cursor:crosshair; touch-action:none;}
+  .xydot{position:absolute; width:12px; height:12px; border-radius:50%; background:var(--ink); transform:translate(-50%,-50%); pointer-events:none; left:0; top:0;}
+  .xyl{position:absolute; font-size:9px; letter-spacing:.5px; text-transform:uppercase; color:var(--mut); pointer-events:none;}
   .xyl0{top:3px; left:5px;} .xyl1{top:3px; right:5px;} .xyl2{bottom:3px; left:5px;} .xyl3{bottom:3px; right:5px;}
   #dreammatrix{position:relative; z-index:20; flex:0 0 auto; width:250px; box-sizing:border-box; display:flex; flex-direction:column;
                padding:12px 10px; border-radius:6px;
@@ -446,11 +470,11 @@
   <div class="ss-s">not here &mdash; this one needs a bigger screen.<br>open it on a desktop or laptop.</div>
 </div>
 
-<video id="bgloop" src="video/loop-bg.mp4?v=3" muted loop playsinline></video>
+<video id="bgloop" src="video/loop-bg.mp4?v=4" muted loop playsinline></video>
 
 <div id="gate">
-  <video id="introVid" src="video/intro.mp4" poster="video/intro-poster.jpg" preload="auto" playsinline></video>
-  <video id="gateLoop" src="video/loop-bg.mp4?v=3" loop playsinline></video>
+  <video id="introVid" src="video/intro.mp4?v=2" poster="video/intro-poster.jpg" preload="auto" playsinline></video>
+  <video id="gateLoop" src="video/loop-bg.mp4?v=4" loop playsinline></video>
   <div id="gateStart">
     <div class="gs-t">best with sound on</div>
     <button id="gateBegin">begin</button>
@@ -458,6 +482,24 @@
   <div id="gatePrompt">
     <div class="gate-q">start dreaming?</div>
     <button id="gateEnter">yes</button>
+  </div>
+</div>
+
+<div id="info" hidden>
+  <div id="infoCard" role="dialog" aria-modal="true" aria-label="How to use">
+    <div class="if-h">how to use</div>
+    <dl class="if-keys">
+      <dt>1 &ndash; 5</dt><dd>chords</dd>
+      <dt>A S D F G</dt><dd>drones &mdash; octaves, from sub to +2</dd>
+      <dt>Z X C V B</dt><dd>drones &mdash; harmonics</dd>
+      <dt>space</dt><dd>play / pause</dd>
+      <dt>drag a knob</dt><dd>take control of it</dd>
+      <dt>double&#8209;click</dt><dd>let it go back to playing itself</dd>
+    </dl>
+    <p class="if-p">every control moves the picture, the sound and the state of the dream at the same time. drag the dream pad toward good or bad, peaceful or chaotic, and everything follows.</p>
+    <div class="if-h">what this is</div>
+    <p class="if-p">eight years of drawings and a room of home video, handed to a machine that dreams with them. nothing here is a recording: the images, the sound and the weather are generated live and recombined on every heartbeat, so the same dream never happens twice.</p>
+    <button id="infoClose" type="button">close</button>
   </div>
 </div>
 
@@ -486,7 +528,10 @@
   </div>
 
   <div id="statusbox" class="gate-reveal">
-    <span class="st-label">status: dreaming</span>
+    <div class="st-head">
+      <span class="st-label">status: dreaming</span>
+      <button id="btnInfo" type="button" aria-label="How to use">?</button>
+    </div>
     <div class="st-btns">
       <button class="tbtn" id="btnSound">Sound<span id="sndled"></span></button>
       <button class="tbtn" id="btnLeave"><svg class="door-ic" viewBox="0 0 16 16" width="10" height="10" aria-hidden="true">
@@ -2960,6 +3005,21 @@ function togglePlay() {
   playLabelEl.textContent = playing ? 'Pause' : 'Play';
 }
 document.getElementById('btnPlay').onclick = togglePlay;
+(function initInfo() {
+  const panel = document.getElementById('info');
+  const open  = () => { panel.hidden = false; document.getElementById('infoClose').focus(); };
+  const close = () => { panel.hidden = true; };
+  document.getElementById('btnInfo').onclick = open;
+  document.getElementById('infoClose').onclick = close;
+  panel.addEventListener('click', e => { if (e.target === panel) close(); });   // click the backdrop
+  addEventListener('keydown', e => {
+    if (panel.hidden) return;
+    // swallow everything while it's open, or typing would play chords behind the text
+    e.stopPropagation();
+    if (e.key === 'Escape') close();
+  }, true);
+})();
+
 document.getElementById('btnLeave').onclick = () => {                  // step back out to the "start dreaming?" gate
   document.getElementById('introVid').pause();
   const gate = document.getElementById('gate');
