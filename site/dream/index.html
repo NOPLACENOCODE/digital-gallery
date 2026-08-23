@@ -123,7 +123,7 @@
   #app, #knobring, #bottombar{ zoom:var(--ui-zoom); }
   #rightRail{position:fixed; right:20px; top:0; bottom:0; z-index:20; width:250px; padding:10px 0;
              display:flex; flex-direction:column; justify-content:center; align-items:stretch; gap:8px; overflow:hidden;}
-  #midRail{position:fixed; left:198px; top:0; bottom:0; z-index:15; width:158px; padding:10px 0;
+  #midRail{position:fixed; left:198px; top:0; bottom:0; z-index:15; width:158px; padding:56px 0 10px;
            display:flex; flex-direction:column; justify-content:center; gap:8px; overflow:hidden;}
   #modes{display:flex; flex-direction:column; gap:8px; flex:0 0 auto; position:relative;
          --ink:var(--panel-ink); --mut:var(--panel-mut); --bg:var(--panel-bg);
@@ -278,11 +278,13 @@
              box-shadow:0 0 10px -8px color-mix(in srgb, var(--ui-accent) 55%, transparent);}
   #statusbox .st-label{font-size:9px; letter-spacing:2px; text-transform:uppercase; color:color-mix(in srgb, var(--ui-accent) 78%, #fff 22%);
              text-shadow:0 0 8px color-mix(in srgb, var(--ui-accent) 55%, transparent);}
-  #statusbox .st-head{display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;}
-  #btnInfo{flex:0 0 auto; width:15px; height:15px; padding:0; border-radius:50%;
-           border:1px solid color-mix(in srgb, var(--ui-accent) 55%, transparent);
-           background:transparent; color:color-mix(in srgb, var(--ui-accent) 80%, #fff 20%);
-           font-family:"Times New Roman",Times,serif; font-size:11px; line-height:1; cursor:pointer;}
+  /* sits in the gap to the right of the status box, above where SHAPE begins */
+  #btnInfo{position:fixed; left:194px; top:16px; z-index:21; width:30px; height:30px; padding:0;
+           border-radius:50%; display:flex; align-items:center; justify-content:center;
+           border:1.5px solid color-mix(in srgb, var(--ui-accent) 55%, transparent);
+           background:rgba(18,16,13,.72); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+           color:color-mix(in srgb, var(--ui-accent) 85%, #fff 15%);
+           font-family:"Times New Roman",Times,serif; font-size:17px; line-height:1; cursor:pointer;}
   #btnInfo:hover{background:var(--ui-accent); color:#12100c;}
   #statusbox .st-btns{display:flex; gap:6px; width:100%;}
 
@@ -359,10 +361,10 @@
   #shape .ckn .dial::after{top:4px; height:calc(var(--dial) * 0.36); width:2px;}
   #shape .ckn .ic{font-size:8px; letter-spacing:.3px; margin-top:4px;}
   /* RUIN gets a bar instead of a dial — it is the one control you ride rather than set */
-  .cbar{position:relative; margin-top:10px; cursor:ew-resize; touch-action:none;}
-  .cbar .btrack{position:relative; height:13px; border:1px solid var(--line2); border-radius:3px; background:var(--bg); overflow:hidden;}
+  .cbar{position:relative; margin-top:10px; cursor:ew-resize; touch-action:none; display:flex; align-items:center; gap:7px;}
+  .cbar .btrack{position:relative; flex:1 1 auto; height:13px; border:1px solid var(--line2); border-radius:3px; background:var(--bg); overflow:hidden;}
   .cbar .bfill{position:absolute; left:0; top:0; bottom:0; width:0%; background:var(--ink);}
-  .cbar .ic{font-size:8px; letter-spacing:.3px; text-transform:uppercase; color:var(--mut); margin-top:4px; text-align:center;}
+  .cbar .ic{flex:0 0 auto; font-size:8px; letter-spacing:.3px; text-transform:uppercase; color:var(--mut); text-align:left;}
   .ckn{position:relative; text-align:center; cursor:ns-resize; touch-action:none;}
   .ckn .dial{width:30px; height:30px; border-radius:50%; border:1px solid var(--line2); background:var(--bg); margin:0 auto; position:relative;}
   .ckn .dial::after{content:''; position:absolute; left:50%; top:4px; width:1.7px; height:11px; background:var(--ink); transform-origin:bottom center; transform:translateX(-50%) rotate(var(--a,-135deg));}
@@ -527,11 +529,9 @@
     <span class="dl-end">bad&nbsp;dream</span>
   </div>
 
+  <button id="btnInfo" type="button" class="gate-reveal" aria-label="How to use">?</button>
   <div id="statusbox" class="gate-reveal">
-    <div class="st-head">
-      <span class="st-label">status: dreaming</span>
-      <button id="btnInfo" type="button" aria-label="How to use">?</button>
-    </div>
+    <span class="st-label">status: dreaming</span>
     <div class="st-btns">
       <button class="tbtn" id="btnSound">Sound<span id="sndled"></span></button>
       <button class="tbtn" id="btnLeave"><svg class="door-ic" viewBox="0 0 16 16" width="10" height="10" aria-hidden="true">
@@ -811,7 +811,7 @@ const PARAMS = [
   { key: 'poster', name: 'RECALL', min: 0, max: 6,   step: 1, def: 0,   auto: [0, .3],    fmt: v => v ? (8 - v) + 'lv' : 'off' },
   { key: 'char',   name: 'DREAM',  min: 0, max: 100, step: 1, def: 38,  auto: [.12, .88], fmt: v => v < 33 ? 'GOOD' : v > 66 ? 'BAD' : 'drift' },
   { key: 'chaos',  name: 'CHAOS',  min: 0, max: 100, step: 1, def: 30,  auto: [.12, .85], fmt: v => v < 33 ? 'PEACE' : v > 66 ? 'CHAOS' : 'drift' },
-  { key: 'mode',   name: 'MODE',   min: 0, max: 7,   step: 1, def: 0,   auto: [0, 1],     panel: true, fmt: v => MODE_LABELS[v] },
+  { key: 'mode',   name: 'MODE',   min: 0, max: 7,   step: 1, def: 0,   auto: [0, 1],     panel: true, ease: .004, fmt: v => MODE_LABELS[v] },   // ease: weather should turn over slowly
   { key: 'tempo',  name: 'PACE',   min: 40, max: 160, step: 1, def: 84, auto: null, transport: true, fmt: v => v + '' },
 ];
 PARAMS.forEach(p => {
@@ -955,24 +955,23 @@ const wxName = document.getElementById('wxName');
 const wxStep = dir => { P.mode.manual = true; P.mode.norm = ((val('mode') + dir + 8) % 8) / 7; };
 document.getElementById('wxUp').onclick = () => wxStep(-1);
 document.getElementById('wxDn').onclick = () => wxStep(1);
-const wxElBtns = WX_STEMS.map((name, i) => {
-  const b = document.createElement('div'); b.className = 'wxel'; b.title = name;
-  const ic = document.createElement('canvas'); ic.className = 'wxelcv'; b.appendChild(ic); b.__cv = ic; b.__icon = i;
-  b.onclick = () => {                                        // hand-pick elements over the chosen weather
-    const recipe = ATMOS_RECIPES[val('mode')] || {};
-    const cur = (name in atmosOverride) ? atmosOverride[name] : (recipe[name] || 0);
-    atmosOverride[name] = cur > .02 ? 0 : (recipe[name] || WX_DEFAULT_LVL[name]);
-  };
+// one button per weather, not per element — pressing one goes straight to that weather.
+// WX_MODE_ICON picks the icon that best reads for each: morning=birds, clouds=wind,
+// drizzle=rain, river=river, sea=waves, embers=fire, dark=hiss, storm=thunder.
+const WX_MODE_ICON = [0, 3, 1, 5, 6, 7, 8, 2];
+const wxElBtns = MODE_LABELS.map((label, i) => {
+  const b = document.createElement('div'); b.className = 'wxel'; b.title = label;
+  const ic = document.createElement('canvas'); ic.className = 'wxelcv'; b.appendChild(ic);
+  b.__cv = ic; b.__icon = WX_MODE_ICON[i];
+  b.onclick = () => { atmosOverride = {}; P.mode.manual = true; P.mode.norm = i / 7; };
   document.getElementById('wxEls').appendChild(b); return b;
 });
 function updateModePanel() {
   const cur = val('mode');
   wxName.textContent = MODE_LABELS[cur];
   wxName.classList.toggle('manual', P.mode.manual);
-  const recipe = ATMOS_RECIPES[cur] || {};
-  WX_STEMS.forEach((name, i) => {
-    const lvl = (name in atmosOverride) ? atmosOverride[name] : (recipe[name] || 0);
-    const on = lvl > .02, b = wxElBtns[i];
+  wxElBtns.forEach((b, i) => {
+    const on = (i === cur);                                   // lit = the weather you're in
     b.classList.toggle('on', on);
     if (b.__lastOn !== on || !b.__drawn) { b.__lastOn = on; b.__drawn = true; drawWxIcon(b.__cv, b.__icon, on); }
   });
@@ -1314,7 +1313,7 @@ function mkChordBar(label, key, full) {      // horizontal bar — drag across i
   const fill = document.createElement('div'); fill.className = 'bfill';
   track.appendChild(fill);
   const ic = document.createElement('div'); ic.className = 'ic'; ic.textContent = label;
-  wrap.append(track, ic);
+  wrap.append(ic, track);          // label reads as a label, not a divider under the bar
   const draw = () => fill.style.width = (CHORDFX[key] * 100).toFixed(1) + '%';
   draw();
   const fromEv = e => { const r = track.getBoundingClientRect();
@@ -1714,7 +1713,7 @@ function updateKnobs() {
   PARAMS.forEach(p => {
     if (!p.manual && p.auto && playing && histIndex === null) {
       const target = lerp(p.auto[0], p.auto[1], patternValue(p.pattern, beatPos));
-      p.norm += (target - p.norm) * .045;
+      p.norm += (target - p.norm) * (p.ease || .045);
     }
     if (!p.el) return;
     const v = val(p.key);
@@ -2374,7 +2373,7 @@ const ATMOS = { built: false, stems: {}, level: {}, lastFire: 0 };
 function buildAtmos() {
   if (ATMOS.built || !AC || !AU) return;
   ATMOS.built = true;
-  const bus = AC.createGain(); bus.gain.value = .8; bus.connect(AU.mix);
+  const bus = AC.createGain(); bus.gain.value = 1.5; bus.connect(AU.mix);   // weather sat too far under the instrument
   const wetBus = AC.createGain(); wetBus.gain.value = .35; bus.connect(wetBus); wetBus.connect(AU.verbIn);
   ATMOS.bus = bus;
   const wlen = AC.sampleRate * 2, wbuf = AC.createBuffer(1, wlen, AC.sampleRate), wd = wbuf.getChannelData(0);
@@ -2387,13 +2386,13 @@ function buildAtmos() {
     srcN.connect(f); f.connect(g); g.connect(bus); srcN.start();
     return { g, f, base };
   };
-  ATMOS.stems.hiss  = mkStem({ type: 'lowpass',  freq: 6000 }, .05);
+  ATMOS.stems.hiss  = mkStem({ type: 'lowpass',  freq: 6000 }, .09);
   ATMOS.stems.wind  = mkStem({ type: 'lowpass',  freq: 320 }, .30);
-  ATMOS.stems.trees = mkStem({ type: 'highpass', freq: 3200 }, .05);
-  ATMOS.stems.rain  = mkStem({ type: 'bandpass', freq: 4800, q: .6 }, .10);
+  ATMOS.stems.trees = mkStem({ type: 'highpass', freq: 3200 }, .10);
+  ATMOS.stems.rain  = mkStem({ type: 'bandpass', freq: 4800, q: .6 }, .15);
   ATMOS.stems.river = mkStem({ type: 'bandpass', freq: 760, q: 2.2 }, .16);
   ATMOS.stems.waves = mkStem({ type: 'lowpass',  freq: 480 }, .34);
-  ATMOS.stems.fire  = mkStem({ type: 'lowpass',  freq: 175, q: 1.3 }, .17);   // Zauberberg ember: deep & dark but now actually present (sub + crackle below)
+  ATMOS.stems.fire  = mkStem({ type: 'lowpass',  freq: 420, q: 1.0 }, .45);   // Zauberberg ember: deep & dark but now actually present (sub + crackle below)
   const gustLfo = AC.createOscillator(); gustLfo.frequency.value = .11; gustLfo.start();
   const gustW = AC.createGain(); gustW.gain.value = 0; gustLfo.connect(gustW); gustW.connect(ATMOS.stems.wind.g.gain);
   const gustT = AC.createGain(); gustT.gain.value = 0; gustLfo.connect(gustT); gustT.connect(ATMOS.stems.trees.g.gain);
@@ -2475,7 +2474,7 @@ function atmosEvent(kind, lvl) {           // one-shot nature events, all synthe
     const g = AC.createGain(); g.gain.value = 0;
     s.connect(lp); lp.connect(g); g.connect(AU.mix);
     const dur = 2.2 + Math.random() * 2.5;
-    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.5 * lvl, t + .06 + Math.random() * .3);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(1.35 * lvl, t + .06 + Math.random() * .3);
     g.gain.setTargetAtTime(0, t + .5, dur / 3);
     s.start(t); s.stop(t + dur + 1);
   } else if (kind === 'bubble') {
@@ -2505,18 +2504,18 @@ function atmosUpdate(t) {
   ATMOS.gustW.gain.setTargetAtTime((ATMOS.level.wind || 0) * .13, t, 1.4);
   ATMOS.gustT.gain.setTargetAtTime((ATMOS.level.trees || 0) * .025, t, 1.4);
   ATMOS.swellG.gain.setTargetAtTime((ATMOS.level.waves || 0) * .2, t, 1.4);
-  ATMOS.fireBS.gain.setTargetAtTime((ATMOS.level.fire || 0) * .022, t, 1.4);   // gentle ember breath
-  ATMOS.fireSubG.gain.setTargetAtTime((ATMOS.level.fire || 0) * .14, t, 1.4);  // deep sub weight (the bass)
-  ATMOS.fireBodyG.gain.setTargetAtTime((ATMOS.level.fire || 0) * .045, t, 1.4);   // mid roar — the body of the fire
-  ATMOS.fireFl1.gain.setTargetAtTime((ATMOS.level.fire || 0) * .016, t, 1.4);     // flicker A
-  ATMOS.fireFl2.gain.setTargetAtTime((ATMOS.level.fire || 0) * .011, t, 1.4);     // flicker B (detuned → irregular)
+  ATMOS.fireBS.gain.setTargetAtTime((ATMOS.level.fire || 0) * .045, t, 1.4);   // gentle ember breath
+  ATMOS.fireSubG.gain.setTargetAtTime((ATMOS.level.fire || 0) * .22, t, 1.4);  // deep sub weight (the bass)
+  ATMOS.fireBodyG.gain.setTargetAtTime((ATMOS.level.fire || 0) * .16, t, 1.4);   // mid roar — the body of the fire
+  ATMOS.fireFl1.gain.setTargetAtTime((ATMOS.level.fire || 0) * .05, t, 1.4);     // flicker A
+  ATMOS.fireFl2.gain.setTargetAtTime((ATMOS.level.fire || 0) * .035, t, 1.4);     // flicker B (detuned → irregular)
   const wander = 620 + Math.sin(beatPos * .35) * 220;            // the river never sits still
   ATMOS.stems.river.f.frequency.setTargetAtTime(wander, t, .8);
   if (soundOn && playing) {                                      // one-shot events, probability-scaled by stem level
     const L = ATMOS.level;
     if (L.birds && Math.random() < L.birds * .045) atmosEvent('chirp', L.birds);
-    if (L.fire  && Math.random() < L.fire  * .10)  atmosEvent('crackle', L.fire);   // each hit is a burst (~1.8 ticks), so it fires less often than the old single-tick rate
-    if (L.thunder && Math.random() < L.thunder * .012) atmosEvent('thunder', L.thunder);
+    if (L.fire  && Math.random() < L.fire  * .22)  atmosEvent('crackle', L.fire * 1.8);   // each hit is a burst (~1.8 ticks), so it fires less often than the old single-tick rate
+    if (L.thunder && Math.random() < L.thunder * .022) atmosEvent('thunder', L.thunder);
     if (L.river && Math.random() < L.river * .1)   atmosEvent('bubble', L.river);
   }
 }
