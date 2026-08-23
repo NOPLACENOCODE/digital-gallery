@@ -337,6 +337,23 @@
           mask-image:radial-gradient(circle at center, transparent 42%, #000 88%);}
   .ctitle{position:relative; font-size:11px; letter-spacing:3px; text-transform:uppercase; font-weight:700; text-align:center; margin-bottom:12px; color:color-mix(in srgb, var(--ui-accent) 78%, #fff 22%); text-shadow:0 0 10px color-mix(in srgb, var(--ui-accent) 55%, transparent);}
   .cstrings{position:relative; flex:1 1 auto; width:100%; min-height:0; cursor:pointer; touch-action:none; display:block;}
+  #chords .cseq{position:relative; margin-top:11px;}
+  #chords .cseq-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(0,1fr)); gap:3px;}
+  #chords .cseq-cell{aspect-ratio:1; min-width:0; padding:0; font-family:var(--mono); font-size:10px;
+                     color:var(--ink); background:var(--bg); border:1px solid var(--line2);
+                     border-radius:2px; cursor:pointer;}
+  #chords .cseq-cell.rest{color:var(--mut);}
+  #chords .cseq-cell.now{border-color:var(--ui-accent); color:var(--ui-accent);
+                         box-shadow:0 0 7px -1px color-mix(in srgb, var(--ui-accent) 70%, transparent);}
+  #chords .cseq-len{display:flex; align-items:center; justify-content:space-between; gap:4px; margin-top:5px;}
+  #chords .cseq-len span{font-size:8px; letter-spacing:1px; text-transform:uppercase; color:var(--mut);}
+  #chords .cseq-len button{width:18px; height:16px; padding:0; font-family:var(--mono); font-size:10px;
+                           color:var(--ink); background:var(--bg); border:1px solid var(--line2);
+                           border-radius:2px; cursor:pointer;}
+  #chords .cseq-len button:hover{border-color:var(--ink);}
+  #chords .crow{display:flex; gap:5px; margin-top:11px;}
+  #chords .crow .cauto{flex:1; margin-top:0;}
+  #chords .crec.armed{background:#c0392b; border-color:#c0392b; color:#fff;}
   #chords .cauto{position:relative; margin-top:11px; font-size:8px; letter-spacing:1px; text-transform:uppercase; color:var(--ink); background:var(--bg); border:1px solid var(--line2); border-radius:3px; padding:5px; cursor:pointer;}
   #chords .cauto.lit{background:var(--ink); color:var(--bg); border-color:var(--ink);}
   #chords .cknobs, #shape .cknobs{position:relative; display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px 2px; margin-top:11px;}
@@ -501,9 +518,10 @@
       <dt>1 &ndash; 5</dt><dd>chords</dd>
       <dt>A S D F G</dt><dd>drones &mdash; octaves, from sub to +2</dd>
       <dt>Z X C V B</dt><dd>drones &mdash; harmonics</dd>
-      <dt>space</dt><dd>play / pause</dd>
       <dt>drag a knob</dt><dd>take control of it</dd>
       <dt>double&#8209;click</dt><dd>let it go back to playing itself</dd>
+      <dt>the grid</dt><dd>the looping progression &mdash; click a step to change its chord, or rest it</dd>
+      <dt>rec</dt><dd>play the chords in and they land on the grid</dd>
     </dl>
     <p class="if-p">every control moves the picture, the sound and the state of the dream at the same time. drag the dream pad toward good or bad, peaceful or chaotic, and everything follows.</p>
     <div class="if-h">what this is</div>
@@ -596,7 +614,7 @@
 <img id="figmaoverlay" alt="">
 <div id="ovlabel"></div>
 
-<div id="hint">drag a knob to take control · double-click to release · space = play/pause · A–G = octave keys · Z–B = harmonic keys · 1–5 = chords · O = figma overlay · click a bird to swap</div>
+<div id="hint">drag a knob to take control · double-click to release · A–G = octave keys · Z–B = harmonic keys · 1–5 = chords · O = figma overlay · click a bird to swap</div>
 <script src="mood.js"></script>
 <script>
 'use strict';
@@ -1171,8 +1189,40 @@ function chordCurve(ruinAmt) {                         // curve sharpens with ru
   _chordCurve = c; return c;
 }
 let chordAuto = true;            // progression plays itself, looping
-let chordSeqStep = -1;
+let chordSeqStep = -1, chordSeqSlot = -1;
+// Recording writes into CHORD_SEQ rather than into a separate event list: what you play is
+// snapped to the nearest step, so it always sits in time, costs nothing extra to play back
+// (the existing stepper handles it), can't leave notes stuck, and stays hand-editable after.
+let seqRec = false, seqRecT0 = 0;
+function seqStartRec() {
+  chordAuto = false;
+  CHORD_SEQ = CHORD_SEQ.map(() => -1);            // start from an empty bar
+  if (chordSeqStep >= 0) setChord(chordSeqStep, false);
+  chordSeqStep = -1; chordSeqSlot = -1;
+  seqRec = true; seqRecT0 = beatPos;
+  seqPaint();
+}
+function seqStopRec() {
+  seqRec = false;
+  chordAuto = true;                               // hand straight over to playback
+  chordSeqSlot = -1;
+  seqPaint();
+}
+function seqRecordPress(i) {
+  if (!seqRec) return;
+  const elapsed = beatPos - seqRecT0;
+  const slot = Math.round(elapsed / CHORD_BEATS) % CHORD_SEQ.length;
+  CHORD_SEQ[slot] = i;
+  seqPaint();
+}
+function seqRecTick() {                           // one pass round the bar, then it plays
+  if (seqRec && beatPos - seqRecT0 >= CHORD_BEATS * CHORD_SEQ.length) seqStopRec();
+}
 const CHORD_BEATS = 8;           // DREAM-PACE beats each chord rings before advancing
+// The looped progression, now editable. -1 = rest. Defaults to 1-2-3-4-5, which is what
+// AUTO stepped through before, so the piece sounds unchanged until you edit it.
+let CHORD_SEQ = [0, 1, 2, 3, 4];
+const SEQ_MAX = 8;
 function chordGoodFactor() { return 1; }   // chords play at full strength across the whole GOOD/BAD range (for now)
 function chordRuinAmount() { return clamp01(CHORDFX.ruin + (P.char ? P.char.norm : 0) * 0.55); }   // BAD dream adds sunn-style drive on top of RUIN
 function chordVerbAmount() { return CHORDFX.reverb * lerp(1, 0.5, P.char ? P.char.norm : 0); }     // BAD dream pulls reverb back — drier, rawer
@@ -1285,19 +1335,64 @@ function arpTick() {
   const cvS = document.createElement('canvas'); cvS.className = 'cstrings'; cvS.id = 'stringsCv';
   let pressed = -1;
   const idxFromEv = e => { const r = cvS.getBoundingClientRect(); return Math.max(0, Math.min(4, Math.floor((e.clientX - r.left) / r.width * 5))); };
-  cvS.addEventListener('pointerdown', e => { e.preventDefault(); cvS.setPointerCapture(e.pointerId); pressed = idxFromEv(e); chordManual(); setChord(pressed, true); });
+  cvS.addEventListener('pointerdown', e => { e.preventDefault(); cvS.setPointerCapture(e.pointerId); pressed = idxFromEv(e); if (!seqRec) chordManual(); seqRecordPress(pressed); setChord(pressed, true); });
   cvS.addEventListener('pointerup', () => { if (pressed >= 0) setChord(pressed, false); pressed = -1; });
   cvS.addEventListener('pointercancel', () => { if (pressed >= 0) setChord(pressed, false); pressed = -1; });
   host.appendChild(cvS);
 
+  // ---- editable loop: each slot cycles 1..5 then rest; the length is adjustable ----
+  const seqWrap = document.createElement('div'); seqWrap.className = 'cseq';
+  const seqRow = document.createElement('div'); seqRow.className = 'cseq-row';
+  const lenRow = document.createElement('div'); lenRow.className = 'cseq-len';
+  const lenDown = document.createElement('button'); lenDown.textContent = '\u2212';
+  const lenLbl = document.createElement('span');
+  const lenUp = document.createElement('button'); lenUp.textContent = '+';
+  lenDown.title = 'shorter loop'; lenUp.title = 'longer loop';
+  lenRow.append(lenDown, lenLbl, lenUp);
+  seqWrap.append(seqRow, lenRow);
+
+  window.seqPaint = function () {
+    while (seqRow.children.length > CHORD_SEQ.length) seqRow.removeChild(seqRow.lastChild);
+    while (seqRow.children.length < CHORD_SEQ.length) {
+      const idx = seqRow.children.length;
+      const cell = document.createElement('button'); cell.className = 'cseq-cell';
+      cell.onclick = () => {                       // 1..5 -> rest -> 1..
+        CHORD_SEQ[idx] = CHORD_SEQ[idx] >= CHORD_NOTES.length - 1 ? -1 : CHORD_SEQ[idx] + 1;
+        seqPaint();
+      };
+      seqRow.appendChild(cell);
+    }
+    [...seqRow.children].forEach((c, i) => {
+      c.textContent = CHORD_SEQ[i] < 0 ? '\u00B7' : (CHORD_SEQ[i] + 1);
+      c.classList.toggle('rest', CHORD_SEQ[i] < 0);
+      c.classList.toggle('now', chordAuto && i === chordSeqSlot);
+      c.title = 'step ' + (i + 1);
+    });
+    lenLbl.textContent = seqRec ? 'recording\u2026' : CHORD_SEQ.length + ' steps';
+    const rb = host.querySelector('.crec');
+    if (rb) { rb.classList.toggle('armed', seqRec); rb.textContent = seqRec ? 'Stop' : 'Rec'; }
+    const ab = host.querySelector('.cauto:not(.crec)');
+    if (ab) ab.classList.toggle('lit', chordAuto);
+  };
+  lenDown.onclick = () => { if (CHORD_SEQ.length > 2) { CHORD_SEQ.pop(); chordSeqSlot = -1; seqPaint(); } };
+  lenUp.onclick = () => { if (CHORD_SEQ.length < SEQ_MAX) { CHORD_SEQ.push(0); chordSeqSlot = -1; seqPaint(); } };
+  host.appendChild(seqWrap);
+
   const auto = document.createElement('button'); auto.className = 'cauto' + (chordAuto ? ' lit' : '');
-  auto.textContent = 'Auto'; auto.title = 'auto-play the progression';
+  auto.textContent = 'Auto'; auto.title = 'play the loop above';
   auto.onclick = () => {
     chordAuto = !chordAuto; auto.classList.toggle('lit', chordAuto);
-    if (!chordAuto && chordSeqStep >= 0) { setChord(chordSeqStep, false); chordSeqStep = -1; }
+    chordSeqSlot = -1; seqPaint();
+    if (!chordAuto && chordSeqStep >= 0) { setChord(chordSeqStep, false); } chordSeqStep = -1; chordSeqSlot = -1;
   };
-  host.appendChild(auto);
+  const rec = document.createElement('button'); rec.className = 'cauto crec';
+  rec.textContent = 'Rec'; rec.title = 'play the chords in — they land on the grid, one pass round';
+  rec.onclick = () => { seqRec ? seqStopRec() : seqStartRec(); };
+  const btnRow = document.createElement('div'); btnRow.className = 'crow';
+  btnRow.append(auto, rec);
+  host.appendChild(btnRow);
 
+  seqPaint();
   const knobs = document.createElement('div'); knobs.className = 'cknobs';
   [['arp','arp'],['rate','rate'],['vol','vol']].forEach(([lab, key]) => knobs.appendChild(mkChordKnob(lab, key)));
   host.appendChild(knobs);
@@ -1376,7 +1471,7 @@ function chordManual() {                 // user playing a chord stops auto-play
   chordAuto = false;
   const autoBtn = document.querySelector('#chords .cauto');
   if (autoBtn) autoBtn.classList.remove('lit');
-  if (chordSeqStep >= 0) { setChord(chordSeqStep, false); chordSeqStep = -1; }
+  if (chordSeqStep >= 0) { setChord(chordSeqStep, false); } chordSeqStep = -1; chordSeqSlot = -1;
 }
 const stringAmp = [0, 0, 0, 0, 0], stringPhase = [0, 0, 0, 0, 0], stringActive = [false, false, false, false, false];
 let stringsEl = null, stringsCtx2 = null, lastStringsT = performance.now();
@@ -2720,14 +2815,17 @@ function audioUpdate() {
     });
   }
   if (chordAuto && playing && histIndex === null) {                // auto-play the progression, looping
-    const step = Math.floor(beatPos / CHORD_BEATS) % CHORD_NOTES.length;
-    if (step !== chordSeqStep) {
-      if (chordSeqStep >= 0) setChord(chordSeqStep, false);
-      chordSeqStep = step;
-      setChord(step, true);
+    const slot = Math.floor(beatPos / CHORD_BEATS) % CHORD_SEQ.length;
+    if (slot !== chordSeqSlot) {
+      if (chordSeqStep >= 0) setChord(chordSeqStep, false);   // release whatever was ringing
+      chordSeqSlot = slot;
+      chordSeqStep = CHORD_SEQ[slot];                          // -1 = rest, nothing sounds
+      if (chordSeqStep >= 0) setChord(chordSeqStep, true);
+      seqPaint();
     }
   }
 
+  seqRecTick();
   atmosUpdate(t);                                               // weather beds follow the current atmosphere
 
   chaosLurch *= .88;                                            // pitch lurches recover on their own
@@ -3095,13 +3193,13 @@ document.getElementById('btnLeave').onclick = () => {                  // step b
 };
 
 addEventListener('keydown', e => {
-  if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+  // space no longer pauses — people were stopping the machine by accident
   if (e.code === 'ArrowLeft') { e.preventDefault(); scrubStep(-9); }
   if (e.code === 'ArrowRight') { e.preventDefault(); scrubStep(9); }
   if (!e.ctrlKey && !e.metaKey && !e.altKey) {
     const lk = LAUNCHER_KEYS.find(k => e.key.toLowerCase() === k.key);
     if (lk) { e.preventDefault(); toggleLauncher(lk); }
-    if (e.code in CHORD_KEYMAP && !e.repeat) { e.preventDefault(); chordManual(); setChord(CHORD_KEYMAP[e.code], true); }
+    if (e.code in CHORD_KEYMAP && !e.repeat) { e.preventDefault(); if (!seqRec) chordManual(); seqRecordPress(CHORD_KEYMAP[e.code]); setChord(CHORD_KEYMAP[e.code], true); }
   }
 });
 addEventListener('keyup', e => { if (e.code in CHORD_KEYMAP) setChord(CHORD_KEYMAP[e.code], false); });
