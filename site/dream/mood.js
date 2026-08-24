@@ -1,4 +1,4 @@
-// DREAM02 · shared mood scoring — used by index.html (image selection) AND photolab.html
+// DREAM03 · shared mood scoring — used by index.html (image selection) AND photolab.html
 // (the mood categorization grid). One copy so the dream and the editor never drift apart.
 //
 // Photo Lab "related words" → (valence, arousal).
