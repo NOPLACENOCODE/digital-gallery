@@ -1,3 +1,18 @@
+## 2026-08-23 — DREAM03: rename, chord loop editor, thunder, Solo Show proposal
+
+- Renamed DREAM02 -> DREAM03 (page title + mood.js). The on-disk folder stays `DREAM02/`.
+- Chord progression is now an editable step grid (rest + hold values, adjustable length),
+  defaulting to the old 1-2-3-4-5 so nothing sounds different until touched. Free-form
+  looper records your playing with exact timing; `?loop=grid` is the quantised alternative.
+- Space no longer pauses (people were stopping the machine by accident).
+- Thunder was inaudible because it was a 110-170Hz lowpass, i.e. pure sub. Rebuilt as
+  crack + body + rumble, 1-3 return strokes, with a matching strobe flash in the room and
+  an inverting weather panel. Same root cause as the earlier fire fix.
+- Weather: one button per atmosphere (was per-element), ~11x slower drift, louder overall.
+- Info panel behind a `?` button; bigger X/Y matrix; RUIN label moved beside its bar.
+- Build tooling rescued out of temp into `DREAM02/tools/` with a README; CLAUDE.md now
+  documents the deploy loop and the immutable-cache trap.
+
 ## 2026-08-22 — DREAM02 beta published at /dream (unlisted)
 
 Deployed the DREAM02 generative instrument as an unlisted beta for tester feedback.
