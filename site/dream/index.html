@@ -222,7 +222,8 @@
         background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><filter id='s'><feTurbulence type='turbulence' baseFrequency='0.035' numOctaves='4' seed='7' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23s)'/></svg>");
         -webkit-mask-image:radial-gradient(circle at center, transparent 42%, #000 88%);
         mask-image:radial-gradient(circle at center, transparent 42%, #000 88%);}
-  #ekg{position:relative; width:100%; height:22px; display:block; margin-bottom:3px; border-bottom:1px solid var(--line);}
+  /* the heart needs real estate — this was 22px for a flat EKG trace */
+  #ekg{position:relative; width:100%; height:74px; display:block; margin:2px 0 6px;}
   #kick .ktitle{position:relative; font-size:11px; letter-spacing:3px; color:color-mix(in srgb, var(--ui-accent) 78%, #fff 22%); text-transform:uppercase; font-weight:700; text-align:center; margin-bottom:1px; text-shadow:0 0 10px color-mix(in srgb, var(--ui-accent) 55%, transparent);}
   #kick .kctl{position:relative; display:flex; align-items:center; gap:7px;}
   #kick .kctl label{font-size:10px; letter-spacing:1px; color:var(--mut); text-transform:uppercase; width:52px; flex:0 0 auto;}
@@ -761,7 +762,8 @@ const SLOT_RATIOS_CHAOS = [1, 1.059, 1.5, 1.587, 2.02, 2.118, 2.97, 4.24, 5.61, 
 let chaosLurch = 0;                                                 // cents — random pitch lurches, decays back
 // separate KICK console — manual controls, independent of the generative knobs
 // depth (deep→high) · drive/WEIGHT = saturation (heaviness) · tone = lowpass Hz · decay = body length · rate = beat divisor · link = follow CHARACTER
-const KICK = { on: true, level: .7, depth: .25, drive: .45, tone: 380, decay: .55, rate: 1, link: false, bpm: 60 };
+const KICK_START_LEVEL = 2.0;      // out of 4 — the heart should arrive strong every time
+const KICK = { on: true, level: KICK_START_LEVEL, depth: .25, drive: .45, tone: 380, decay: .55, rate: 1, link: false, bpm: 60 };
 const KICK_BPM_MIN = 40, KICK_BPM_MAX = 120;
 const kickRateP = { name: 'RATE', norm: (KICK.bpm - KICK_BPM_MIN) / (KICK_BPM_MAX - KICK_BPM_MIN), manual: true, auto: null,
                      fmt: v => Math.round(v) + ' bpm' };
@@ -1135,6 +1137,7 @@ function drawWeatherAnim() {
     const inp = document.createElement('input'); inp.type = 'range'; inp.min = min; inp.max = max; inp.step = step; inp.value = KICK[key];
     const out = document.createElement('span'); out.className = 'kval'; out.textContent = fmt(KICK[key]);
     inp.addEventListener('input', () => { KICK[key] = parseFloat(inp.value); out.textContent = fmt(KICK[key]); });
+    if (key === 'level') { KICK.__lvlInput = inp; KICK.__lvlOut = out; KICK.__lvlFmt = fmt; }
     w.append(l, inp, out); host.appendChild(w);
   };
   const mkBtn = (text, lit, fn) => { const b = document.createElement('button'); b.className = 'kbtn' + (lit ? ' lit' : ''); b.textContent = text; b.onclick = fn; return b; };
@@ -1911,11 +1914,24 @@ function updateArcSliders() {
   });
 }
 
+// how long a weather has to stay before it may turn over. raise for longer stretches.
+const WEATHER_DWELL_MS = 180000;   // 3 minutes
+let lastWeatherChangeAt = -1e9;
 function updateKnobs() {
   PARAMS.forEach(p => {
     if (!p.manual && p.auto && playing && histIndex === null) {
       const target = lerp(p.auto[0], p.auto[1], patternValue(p.pattern, beatPos));
-      p.norm += (target - p.norm) * (p.ease || .045);
+      if (p.key === 'mode') {
+        const wasIdx = val('mode'), wasNorm = p.norm;
+        p.norm += (target - p.norm) * (p.ease || .045);
+        if (val('mode') !== wasIdx) {                       // it wants to change weather
+          const now = performance.now();
+          if (now - lastWeatherChangeAt < WEATHER_DWELL_MS) p.norm = wasNorm;   // too soon — hold
+          else lastWeatherChangeAt = now;
+        }
+      } else {
+        p.norm += (target - p.norm) * (p.ease || .045);
+      }
     }
     if (!p.el) return;
     const v = val(p.key);
@@ -3138,34 +3154,75 @@ function drawPaceViz() {
   paceCtx.shadowBlur = 0;
 }
 
-// ---------------- EKG (heartbeat pulse line) ----------------
-const EKG_N = 150;
-let ekgBuf = new Array(EKG_N).fill(0);
-let ekgQueue = [];
-function ekgBeat() { ekgQueue = [-.10, .16, .95, -.55, .18, .04, 0, 0]; }
+// ---------------- the heart (pixel art, pumps on every beat) ----------------
+// Rasterised from the implicit heart curve onto a low-res grid, then shaded per cell, so
+// it reads as pixel art rather than a scaled-down icon. Beat drives a lub-dub envelope.
+let lastHeartBeatAt = -1e9, heartFlutter = -1e9;
+function ekgBeat() {                                  // kept the old name — the kick calls it
+  if (performance.now() - lastHeartBeatAt < 90) heartFlutter = performance.now();
+  else lastHeartBeatAt = performance.now();
+}
+function heartScale() {
+  const dt = (performance.now() - lastHeartBeatAt) / 1000;
+  let s = 1;
+  if (dt >= 0 && dt < 1.2) {
+    s += Math.exp(-dt * 15) * 0.30;                   // lub — the big contraction
+    if (dt > 0.15) s += Math.exp(-(dt - 0.15) * 17) * 0.17;   // dub — the second, smaller one
+  }
+  const fd = (performance.now() - heartFlutter) / 1000;
+  if (fd >= 0 && fd < 0.6) s += Math.exp(-fd * 16) * 0.16;    // arrhythmia flutter
+  return s;
+}
 let ekgCv = null, ekgCtx = null;
-function drawEkg() {
+function inHeart(u, v) {                              // (x²+y²−1)³ − x²y³ ≤ 0
+  const x = u * 1.28, y = -v * 1.28 + 0.28;
+  const a = x * x + y * y - 1;
+  return a * a * a - x * x * y * y * y <= 0;
+}
+function drawEkg() {                                  // name kept so the render loop is untouched
   if (!ekgCv) { ekgCv = document.getElementById('ekg'); if (!ekgCv) return; ekgCtx = ekgCv.getContext('2d'); }
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   const w = Math.round(ekgCv.clientWidth * dpr), h = Math.round(ekgCv.clientHeight * dpr);
   if (!w || !h) return;
   if (ekgCv.width !== w) ekgCv.width = w;
   if (ekgCv.height !== h) ekgCv.height = h;
-  const s = ekgQueue.length ? ekgQueue.shift() : (Math.random() - .5) * .03;
-  ekgBuf.push(s); ekgBuf.shift();
-  ekgCtx.clearRect(0, 0, w, h);
-  ekgCtx.shadowBlur = 0;
-  ekgCtx.strokeStyle = 'rgba(61,220,107,.14)'; ekgCtx.lineWidth = dpr;
-  ekgCtx.beginPath(); ekgCtx.moveTo(0, h / 2); ekgCtx.lineTo(w, h / 2); ekgCtx.stroke();
-  ekgCtx.strokeStyle = '#3ddc6b'; ekgCtx.shadowColor = '#3ddc6b'; ekgCtx.shadowBlur = 6 * dpr;
-  ekgCtx.lineWidth = 1.1 * dpr;
-  ekgCtx.beginPath();
-  for (let i = 0; i < EKG_N; i++) {
-    const x = i / (EKG_N - 1) * w, y = h / 2 - ekgBuf[i] * h * 0.42;
-    i ? ekgCtx.lineTo(x, y) : ekgCtx.moveTo(x, y);
+  const c = ekgCtx;
+  c.clearRect(0, 0, w, h);
+
+  const sc = heartScale();
+  const GRID = 17;                                    // chunky enough to read as pixels
+  const cell = Math.max(1, Math.floor((h * 0.86 * sc) / GRID));
+  const size = cell * GRID;
+  const ox = Math.round((w - size) / 2), oy = Math.round((h - size) / 2);
+  const beat = Math.min(1, Math.max(0, (sc - 1) / 0.30));   // 0..1, how hard it's contracting
+
+  for (let gy = 0; gy < GRID; gy++) {
+    for (let gx = 0; gx < GRID; gx++) {
+      const u = (gx + 0.5) / GRID * 2 - 1, v = (gy + 0.5) / GRID * 2 - 1;
+      if (!inHeart(u, v)) continue;
+      // shade from an upper-left light, and flush brighter as it contracts
+      const lit = Math.max(0, 1 - Math.hypot(u + 0.42, v + 0.46) / 1.25);
+      const edge = inHeart(u - 2.0 / GRID, v) && inHeart(u + 2.0 / GRID, v) &&
+                   inHeart(u, v - 2.0 / GRID) && inHeart(u, v + 2.0 / GRID);
+      let r, g, b;
+      if (!edge) { r = 66 + beat * 34; g = 6; b = 12; }                 // dark rim
+      else {
+        const t = Math.min(1, lit * 1.35);
+        r = 116 + t * 118 + beat * 30;
+        g = 12 + t * 30;
+        b = 20 + t * 34;
+      }
+      c.fillStyle = `rgb(${r|0},${g|0},${b|0})`;
+      c.fillRect(ox + gx * cell, oy + gy * cell, cell - Math.max(1, dpr * .5), cell - Math.max(1, dpr * .5));
+    }
   }
-  ekgCtx.stroke();
-  ekgCtx.shadowBlur = 0;
+  // a little glow on the contraction so the pump carries at a glance
+  if (beat > 0.02) {
+    c.globalAlpha = beat * 0.30;
+    c.fillStyle = '#ff2b2b';
+    c.beginPath(); c.arc(w / 2, h / 2, size * 0.62, 0, 6.283); c.fill();
+    c.globalAlpha = 1;
+  }
 }
 
 // ---------------- oscilloscope ----------------
@@ -3349,6 +3406,9 @@ if (/[?&]mood\b/.test(location.search)) {
       btnSound.classList.add('lit');
       sndled.classList.add('on');
     }
+
+    KICK.level = KICK_START_LEVEL;                    // the heart arrives strong on every start
+    if (KICK.__lvlInput) { KICK.__lvlInput.value = KICK.level; KICK.__lvlOut.textContent = KICK.__lvlFmt(KICK.level); }
 
     // entry lock: 0 drawings, near-silent immersion, forest clip held, pace near-minimum,
     // ring knobs (drift/fever/fracture/echo/corrupt/static/recall) all at 0 — for ~10s
