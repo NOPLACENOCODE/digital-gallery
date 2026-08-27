@@ -3206,13 +3206,13 @@ function drawEkg() {                                  // name kept so the render
                    inHeart(u, v - 2.0 / GRID) && inHeart(u, v + 2.0 / GRID);
       let r, g, b;
       // blood red: deep and desaturated, so highlights read as wet muscle not pink
-      if (!edge) { r = 38 + beat * 20; g = 8; b = 10; }                 // near-black rim
+      if (!edge) { r = 36 + beat * 18; g = 12; b = 14; }                // near-black rim
       else {
         const t = Math.min(1, lit * 1.35);
-        // a little desaturated — g/b lifted so it reads as dried blood, not signal red
-        r = 74 + t * 104 + beat * 30;
-        g = 11 + t * 33;
-        b = 13 + t * 35;
+        // further desaturated — dried blood / old meat rather than signal red
+        r = 72 + t * 94 + beat * 26;
+        g = 18 + t * 46;
+        b = 20 + t * 48;
       }
       c.fillStyle = `rgb(${r|0},${g|0},${b|0})`;
       c.fillRect(ox + gx * cell, oy + gy * cell, cell - Math.max(1, dpr * .5), cell - Math.max(1, dpr * .5));
