@@ -3174,11 +3174,38 @@ function heartScale() {
   return s;
 }
 let ekgCv = null, ekgCtx = null;
-function inHeart(u, v) {                              // (x²+y²−1)³ − x²y³ ≤ 0
-  const x = u * 1.28, y = -v * 1.28 + 0.28;
-  const a = x * x + y * y - 1;
-  return a * a * a - x * x * y * y * y <= 0;
-}
+// Anatomical, hand-drawn. A = the aortic arch (with its open loop) and pulmonary trunk,
+// M = muscle. The mass is asymmetric and tilts down-left to the apex, which is what
+// separates it from a valentine — a symmetrical blob with two bumps reads as the latter.
+const HEART_ART = [
+  ".......AA...........",
+  "......AAAA..........",
+  ".....AA..AA...PP....",
+  "....AA....AA.PPPP...",
+  "....AA.....APPPPP...",
+  "....AA....PPPPPPP...",
+  "....AAA..PPPPPPPP...",
+  "....AAAPPPPPPPPPP...",
+  "...MMMMMMMMMMMMMMM..",
+  "..MMMMMMMMMMMMMMMMM.",
+  ".MMMMMMMMMMMMMMMMMMM",
+  "MMMMMMMMMMMMMMMMMMMM",
+  "MMMMMMMMMMMMMMMMMMMM",
+  "MMMMMMMMMMMMMMMMMMM.",
+  "MMMMMMMMMMMMMMMMMMM.",
+  "MMMMMMMMMMMMMMMMMM..",
+  ".MMMMMMMMMMMMMMMMM..",
+  ".MMMMMMMMMMMMMMMM...",
+  "..MMMMMMMMMMMMMMM...",
+  "..MMMMMMMMMMMMMM....",
+  "...MMMMMMMMMMMM.....",
+  "...MMMMMMMMMMM......",
+  "....MMMMMMMMM.......",
+  ".....MMMMMMM........",
+  "......MMMMM.........",
+  ".......MMM..........",
+];
+const HEART_W = HEART_ART[0].length, HEART_H = HEART_ART.length;
 function drawEkg() {                                  // name kept so the render loop is untouched
   if (!ekgCv) { ekgCv = document.getElementById('ekg'); if (!ekgCv) return; ekgCtx = ekgCv.getContext('2d'); }
   const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -3190,37 +3217,37 @@ function drawEkg() {                                  // name kept so the render
   c.clearRect(0, 0, w, h);
 
   const sc = heartScale();
-  const GRID = 17;                                    // chunky enough to read as pixels
-  const cell = Math.max(1, Math.floor((h * 0.86 * sc) / GRID));
-  const size = cell * GRID;
-  const ox = Math.round((w - size) / 2), oy = Math.round((h - size) / 2);
-  const beat = Math.min(1, Math.max(0, (sc - 1) / 0.30));   // 0..1, how hard it's contracting
+  const beat = Math.min(1, Math.max(0, (sc - 1) / 0.30));
+  const cell = Math.max(1, Math.floor((h * 0.92 * sc) / HEART_H));
+  const ox = Math.round((w - HEART_W * cell) / 2);
+  const oy = Math.round((h - HEART_H * cell) / 2);
+  const at = (x, y) => (x < 0 || y < 0 || x >= HEART_W || y >= HEART_H) ? '.' : HEART_ART[y][x];
+  const gap = Math.max(1, Math.round(dpr * .5));
 
-  for (let gy = 0; gy < GRID; gy++) {
-    for (let gx = 0; gx < GRID; gx++) {
-      const u = (gx + 0.5) / GRID * 2 - 1, v = (gy + 0.5) / GRID * 2 - 1;
-      if (!inHeart(u, v)) continue;
-      // shade from an upper-left light, and flush brighter as it contracts
-      const lit = Math.max(0, 1 - Math.hypot(u + 0.42, v + 0.46) / 1.25);
-      const edge = inHeart(u - 2.0 / GRID, v) && inHeart(u + 2.0 / GRID, v) &&
-                   inHeart(u, v - 2.0 / GRID) && inHeart(u, v + 2.0 / GRID);
+  for (let gy = 0; gy < HEART_H; gy++) {
+    for (let gx = 0; gx < HEART_W; gx++) {
+      const ch = at(gx, gy);
+      if (ch === '.') continue;
+      const rim = at(gx-1,gy) === '.' || at(gx+1,gy) === '.' ||
+                  at(gx,gy-1) === '.' || at(gx,gy+1) === '.';
+      // light from upper-left, so the muscle turns over toward the apex
+      const lit = Math.max(0, 1 - Math.hypot(gx/HEART_W - 0.30, gy/HEART_H - 0.34) * 1.75);
       let r, g, b;
-      if (!edge) { r = 66 + beat * 34; g = 6; b = 12; }                 // dark rim
-      else {
-        const t = Math.min(1, lit * 1.35);
-        r = 116 + t * 118 + beat * 30;
-        g = 12 + t * 30;
-        b = 20 + t * 34;
+      if (rim) {                                       // near-black venous edge
+        r = 44 + beat * 22; g = 2; b = 6;
+      } else if (ch === 'A') {                         // great vessels — duller, greyed maroon
+        r = 116 + lit * 44 + beat * 22; g = 44 + lit * 22; b = 46 + lit * 22;
+      } else {                                         // muscle — blood red
+        r = 92 + lit * 132 + beat * 38; g = 5 + lit * 16; b = 8 + lit * 16;
       }
       c.fillStyle = `rgb(${r|0},${g|0},${b|0})`;
-      c.fillRect(ox + gx * cell, oy + gy * cell, cell - Math.max(1, dpr * .5), cell - Math.max(1, dpr * .5));
+      c.fillRect(ox + gx * cell, oy + gy * cell, cell - gap, cell - gap);
     }
   }
-  // a little glow on the contraction so the pump carries at a glance
-  if (beat > 0.02) {
-    c.globalAlpha = beat * 0.30;
-    c.fillStyle = '#ff2b2b';
-    c.beginPath(); c.arc(w / 2, h / 2, size * 0.62, 0, 6.283); c.fill();
+  if (beat > 0.02) {                                   // the flush of a contraction
+    c.globalAlpha = beat * 0.26;
+    c.fillStyle = '#c8121a';
+    c.beginPath(); c.arc(w/2, h/2, HEART_H * cell * 0.60, 0, 6.283); c.fill();
     c.globalAlpha = 1;
   }
 }
