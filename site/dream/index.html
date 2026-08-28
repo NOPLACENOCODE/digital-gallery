@@ -37,6 +37,11 @@
              background:radial-gradient(ellipse 72% 56% at 50% 30%,
                         rgb(255,176,116) 0%, rgb(232,96,44) 26%, rgb(168,42,18) 50%,
                         rgb(96,20,10) 74%, rgb(44,9,5) 100%);}
+  /* dark night: the room sinks. Same room layer as #firelight — under #app, so the
+     drawings keep their own contrast. Darker at the edges, so it closes in. */
+  #nightdark{position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0;
+             background:radial-gradient(ellipse 82% 70% at 50% 38%,
+                        rgba(0,0,0,.62) 0%, rgba(0,0,0,.82) 48%, rgba(0,0,0,.96) 100%);}
   #thunderflash{position:fixed; inset:0; z-index:2; pointer-events:none; opacity:0;
                 mix-blend-mode:screen;
                 background:radial-gradient(ellipse 75% 60% at 50% 32%,
@@ -515,6 +520,7 @@
 
 <video id="bgloop" src="video/loop-bg.mp4?v=4" muted loop playsinline></video>
 <div id="firelight" aria-hidden="true"></div>
+<div id="nightdark" aria-hidden="true"></div>
 
 <div id="gate">
   <video id="introVid" src="video/intro.mp4?v=2" poster="video/intro-poster.jpg" preload="auto" playsinline></video>
@@ -772,6 +778,8 @@ const ATMOS_RECIPES = [
 // and the clips inside the circle get a matching warm multiply.
 const FIRE_MODE = 5;
 let FIRE_TINT = '#ff5a3c', FIRE_TINT_AMT = .58, FIRE_TINT_OP = 'multiply';
+const NIGHT_MODE = 6;
+let NIGHT_DARK_MAX = .8;      // how far the room sinks on 'dark night swallows me'
 let FIRE_GLOW_MAX = .85;      // peak opacity of the window glow
 let FIRE_FLICKER = .13;       // how much it breathes
 const ATMOS_VIGNETTES = [null, 'rgba(255,255,255,.30)', null, null, 'rgba(255,255,255,.16)',
@@ -1056,6 +1064,13 @@ function drawThunderFlash() {
 // The lightning still: for a moment after a strike the piece stops moving and shows one
 // drawing as a negative — white ink on black, no video, no glitch. It is an opaque overlay
 // rather than a branch inside renderFrame, so the render pipeline is entirely unaware of it.
+let nightDark = 0, nightEl = null;
+function drawNightDark() {
+  if (!nightEl) { nightEl = document.getElementById('nightdark'); if (!nightEl) return; }
+  nightDark += ((val('mode') === NIGHT_MODE ? 1 : 0) - nightDark) * .012;   // eases with the weather
+  if (nightDark < .002) { nightDark = 0; if (nightEl.style.opacity !== '0') nightEl.style.opacity = '0'; return; }
+  nightEl.style.opacity = (nightDark * NIGHT_DARK_MAX).toFixed(3);
+}
 let fireGlow = 0, fireEl = null;
 function drawFireLight() {
   if (!fireEl) { fireEl = document.getElementById('firelight'); if (!fireEl) return; }
@@ -3364,6 +3379,7 @@ function loop(now) {
   drawThunderFlash();
   drawStrikeStill();
   drawFireLight();
+  drawNightDark();
   if (playing && histIndex === null) { maybeRotateVideo(); }   // image rotation is driven by the heartbeat, see rotateDeckOnBeat()
   if (!busy && now - lastTick >= TICK_MS) {
     busy = true; lastTick = now;

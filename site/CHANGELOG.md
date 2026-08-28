@@ -169,3 +169,9 @@ Most recent change first. Add a new entry at the top after every session.
   red, which reads as a fire burning outside.
 - Eases in/out over ~1.5s with the weather and carries a slow two-sine flicker.
 - FIRE_GLOW_MAX / FIRE_FLICKER are `let`, tunable live.
+
+## 2026-08-28 — DREAM03: dark night sinks the room
+- 'dark night swallows me' now darkens the room video via a new #nightdark layer, in the same
+  z-index:0 room band as #firelight — under #app, so the drawings circle is untouched.
+- Darker toward the edges so the room closes in; eases with the weather like the firelight.
+- NIGHT_DARK_MAX is `let`, tunable live.
