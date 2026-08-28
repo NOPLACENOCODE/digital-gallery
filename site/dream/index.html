@@ -756,6 +756,10 @@ const ATMOS_RECIPES = [
   { hiss: .55,  wind: .12 },                                               // DARK
   { rain: .85,  wind: .8,  trees: .5, thunder: .8 },                       // STORM
 ];
+// forest fire: the room's video is multiplied by a warm red, so whatever light comes through
+// the window burns instead of glowing white. multiply leaves the dark room dark and only
+// pushes the lit areas — a plain overlay would fog the whole frame.
+const FIRE_MODE = 5, FIRE_TINT = '#ff5a3c', FIRE_TINT_AMT = .58;
 const ATMOS_VIGNETTES = [null, 'rgba(255,255,255,.30)', null, null, 'rgba(255,255,255,.16)',
                          'rgba(140,26,12,.44)',   /* EMBERS — fire-red */
                          'rgba(0,0,0,.48)',       /* DARK — black */
@@ -2331,6 +2335,13 @@ async function renderFrame() {
 
   ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
   drawVideoLayer(ctx, SIZE);         // moving dream base — drawings glitch over it
+  if (val('mode') === FIRE_MODE) {   // ...burning, before any drawing goes over the top
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.globalAlpha = FIRE_TINT_AMT;
+    ctx.fillStyle = FIRE_TINT;
+    ctx.fillRect(0, 0, SIZE, SIZE);
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  }
   const mode = MODES[val('mode')], alpha = val('mix') / 100;
   for (let i = 0; i < imgs.length; i++) {
     if (i === 0) {                   // lead drawing: plain draw — dark ink survives every mode

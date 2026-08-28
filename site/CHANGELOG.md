@@ -143,3 +143,9 @@ Most recent change first. Add a new entry at the top after every session.
   a negative — white ink on black, no video, no glitch — then fades back over 0.9s.
 - Implemented as an opaque overlay canvas inside #center rather than a branch in
   renderFrame, so the render pipeline is completely unchanged.
+
+## 2026-08-28 — DREAM03: forest fire tints the room red
+- In forest fire mode the video layer is multiplied by a warm red (#ff5a3c at .58), so the
+  light coming through the window burns instead of glowing white. Multiply keeps the dark
+  room dark and only pushes the lit areas; applied before the drawings composite, so the
+  ink is untouched.
