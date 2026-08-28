@@ -195,3 +195,14 @@ Most recent change first. Add a new entry at the top after every session.
 - Frames re-exported at 720px (were 360) so they downscale rather than blur, and bumped to
   ?v=2 since the bytes changed.
 - HEART_SCALE is `let` — 2 to 3.2 all fit the canvas without clipping.
+
+## 2026-08-28 — DREAM03: weather chips read as a screen switching on
+- All eight selected-weather fills are now bright and saturated, with one near-black ink
+  (#0d0d10) for all of them. Black clears 5.91:1 at worst; white bottomed out at 1.27:1 on
+  clouds, so it was never viable.
+- The chip now blooms in its OWN hue — previously the only glow was the gold selection ring,
+  so the chip never emitted its weather colour.
+- Unlit glyph dimmed (#8a8a8a -> #5d626c) and a 160-220ms transition added, so switching
+  weather reads as a panel powering on rather than snapping between two static states.
+- Trade taken deliberately: lightness no longer encodes the weather, hue does. Dark night is
+  a lit indigo rather than black — an indicator for night, not a picture of it.

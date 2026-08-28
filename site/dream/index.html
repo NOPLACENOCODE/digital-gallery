@@ -188,9 +188,17 @@
   .wxarrows button:hover{color:var(--ink); border-color:var(--ink);}
   #wxCv{position:relative; display:block; margin:0 auto; border:1px solid var(--line); border-radius:3px; background:var(--bg); width:226px; height:226px;}
   #wxEls{display:flex; gap:3px; justify-content:space-between;}
-  .wxel{position:relative; flex:1; height:20px; border:1px solid var(--line2); border-radius:2px; padding:2px; cursor:pointer; user-select:none;}
+  .wxel{position:relative; flex:1; height:20px; border:1px solid var(--line2); border-radius:2px; padding:2px; cursor:pointer; user-select:none;
+        transition:background .16s ease, box-shadow .22s ease, border-color .16s ease;}
   .wxelcv{width:100%; height:100%; display:block; image-rendering:pixelated;}
-  .wxel.on{background:var(--ink); color:var(--bg); border-color:var(--ink);}
+  /* Selected weather: the fill IS the weather (--wx-fill, set per button below), while
+     "which one is on" is carried by the gold ring. They have to be separate signals —
+     dark night is black, and a black chip on a near-black panel (1.12:1) can never read
+     as selected on its own. */
+  .wxel.on{background:var(--wx-fill, var(--ink)); border-color:var(--wx-edge, var(--ink));
+           box-shadow:0 0 0 1px var(--ui-accent),
+                      0 0 9px -1px color-mix(in srgb, var(--wx-fill) 80%, transparent),
+                      0 0 20px -4px color-mix(in srgb, var(--wx-fill) 60%, transparent);}
   #modeAuto.off{color:var(--ink); border-color:var(--ink); border-style:solid;}
   #dreamlever{display:none; position:relative; z-index:10; align-items:center; gap:14px; flex:0 0 auto;
               width:min(440px,58vw); margin:0 auto; padding:9px 18px; border-radius:11px;
@@ -750,7 +758,7 @@ const WX_ICONS = [
   ['...X....', '...XX...', '..XX....', '..XXX...', '.XXXXX..', '.XXXXX..', '..XXX...', '........'],   // fire
   ['X..X..X.', '.X....X.', '...X.X..', 'X.X...X.', '.X..X...', '..X...XX', 'X....X..', '.X.X....'],   // hiss
 ];
-function drawWxIcon(cv3, iconIdx, on) {
+function drawWxIcon(cv3, iconIdx, on, tint) {
   const g = cv3.getContext('2d');
   const dpr = Math.min(2, devicePixelRatio || 1);
   const w = Math.max(8, Math.round(cv3.clientWidth * dpr)), h = Math.max(8, Math.round(cv3.clientHeight * dpr));
@@ -759,7 +767,7 @@ function drawWxIcon(cv3, iconIdx, on) {
   g.clearRect(0, 0, w, h);
   const cell = Math.floor(Math.min(w, h) / 8);
   const ox = Math.floor((w - cell * 8) / 2), oy = Math.floor((h - cell * 8) / 2);
-  g.fillStyle = on ? '#ffffff' : '#8a8a8a';
+  g.fillStyle = on ? (tint || '#ffffff') : '#5d626c';   // lit = near-black on the bright fill; unlit sits dim, so switching on jumps
   const rows = WX_ICONS[iconIdx];
   for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++)
     if (rows[y][x] === 'X') g.fillRect(ox + x * cell, oy + y * cell, cell, cell);
@@ -1024,10 +1032,29 @@ document.getElementById('wxDn').onclick = () => wxStep(1);
 // WX_MODE_ICON picks the icon that best reads for each: morning=birds, clouds=wind,
 // drizzle=rain, river=river, sea=waves, embers=fire, dark=hiss, storm=thunder.
 const WX_MODE_ICON = [0, 3, 1, 5, 6, 7, 8, 2];
+// Selected-weather palette. The chip is meant to read as a small screen switching ON, so
+// every fill is bright and saturated and the ink is the SAME near-black for all eight — a
+// dark glyph on an emissive ground is how a backlit LCD reads. Black clears 5.91:1 at worst
+// here; white bottomed out at 1.27:1 on clouds, which is why it is not an option.
+// The cost, taken deliberately: lightness can no longer encode the weather, so hue carries it
+// alone. Dark night is a glowing indigo — an indicator FOR night, not a picture of it.
+const WX_INK = '#0d0d10';
+const WX_COLORS = [
+  { fill: '#ffa63c', icon: WX_INK, edge: '#ffc47a' },   // early spring morning — amber
+  { fill: '#e8e4d8', icon: WX_INK, edge: '#faf7ee' },   // low heavy clouds — warm off-white
+  { fill: '#6fb6e6', icon: WX_INK, edge: '#a2d3f2' },   // slight rain — sky blue
+  { fill: '#8ee0ea', icon: WX_INK, edge: '#bdf0f6' },   // sleep by the river — aqua
+  { fill: '#46c8b0', icon: WX_INK, edge: '#82e0ce' },   // seaside deepsleep — teal
+  { fill: '#ff5230', icon: WX_INK, edge: '#ff8a6f' },   // forest fire — hot orange-red
+  { fill: '#8b7ff0', icon: WX_INK, edge: '#b3aaf7' },   // dark night — indigo, lit not black
+  { fill: '#b6c2cc', icon: WX_INK, edge: '#d7dfe6' },   // violent storm — cold steel
+];
 const wxElBtns = MODE_LABELS.map((label, i) => {
   const b = document.createElement('div'); b.className = 'wxel'; b.title = label;
   const ic = document.createElement('canvas'); ic.className = 'wxelcv'; b.appendChild(ic);
   b.__cv = ic; b.__icon = WX_MODE_ICON[i];
+  b.style.setProperty('--wx-fill', WX_COLORS[i].fill);
+  b.style.setProperty('--wx-edge', WX_COLORS[i].edge);
   b.onclick = () => { atmosOverride = {}; P.mode.manual = true; P.mode.norm = i / 7; };
   document.getElementById('wxEls').appendChild(b); return b;
 });
@@ -1038,7 +1065,7 @@ function updateModePanel() {
   wxElBtns.forEach((b, i) => {
     const on = (i === cur);                                   // lit = the weather you're in
     b.classList.toggle('on', on);
-    if (b.__lastOn !== on || !b.__drawn) { b.__lastOn = on; b.__drawn = true; drawWxIcon(b.__cv, b.__icon, on); }
+    if (b.__lastOn !== on || !b.__drawn) { b.__lastOn = on; b.__drawn = true; drawWxIcon(b.__cv, b.__icon, on, WX_COLORS[i].icon); }
   });
   modeAutoBtn.classList.toggle('off', P.mode.manual);
   modeAutoBtn.textContent = P.mode.manual ? 'MANUAL' : 'AUTO';
