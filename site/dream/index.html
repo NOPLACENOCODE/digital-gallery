@@ -97,6 +97,12 @@
   #cv{width:100%; height:100%; border-radius:50%; display:block;
       -webkit-mask-image:radial-gradient(circle closest-side, #000 58%, rgba(0,0,0,.55) 80%, transparent 99%);
       mask-image:radial-gradient(circle closest-side, #000 58%, rgba(0,0,0,.55) 80%, transparent 99%);}
+  /* lightning still: the lead drawing inverted, laid over everything. Opaque, so the
+     glitch passes underneath are simply hidden — renderFrame is untouched. */
+  #strikecv{position:absolute; inset:0; width:100%; height:100%; border-radius:50%;
+      display:block; pointer-events:none; opacity:0;
+      -webkit-mask-image:radial-gradient(circle closest-side, #000 58%, rgba(0,0,0,.55) 80%, transparent 99%);
+      mask-image:radial-gradient(circle closest-side, #000 58%, rgba(0,0,0,.55) 80%, transparent 99%);}
   #centerRing{display:none;}
 
   #scope{width:100%; height:34px; display:block;
@@ -545,7 +551,7 @@
 
     <div id="screenwrap">
       <div id="roster"><span class="label">In&nbsp;the&nbsp;mix</span></div>
-      <div id="center"><canvas id="cv" width="640" height="640"></canvas><div id="centerRing"></div></div>
+      <div id="center"><canvas id="cv" width="640" height="640"></canvas><canvas id="strikecv" width="640" height="640" aria-hidden="true"></canvas><div id="centerRing"></div></div>
       <canvas id="scope"></canvas>
       <div id="beats"><i></i><i></i><i></i><i></i></div>
     </div>
@@ -1028,6 +1034,44 @@ function drawThunderFlash() {
   if (!flashEl) flashEl = document.getElementById('thunderflash');
   if (!flashEl) return;
   flashEl.style.opacity = (thunderFlashAmount() * .78).toFixed(3);
+}
+// The lightning still: for a moment after a strike the piece stops moving and shows one
+// drawing as a negative — white ink on black, no video, no glitch. It is an opaque overlay
+// rather than a branch inside renderFrame, so the render pipeline is entirely unaware of it.
+let strikeAt = -1e9, strikeReady = false, strikePending = false, strikeCv = null;
+const STRIKE_HOLD = 2400, STRIKE_FADE = 900;
+function strikeAmount() {
+  const dt = performance.now() - strikeAt;
+  if (dt < 0 || dt > STRIKE_HOLD + STRIKE_FADE) return 0;
+  return dt <= STRIKE_HOLD ? 1 : 1 - (dt - STRIKE_HOLD) / STRIKE_FADE;
+}
+function drawStrikeStill() {
+  if (!strikeCv) { strikeCv = document.getElementById('strikecv'); if (!strikeCv) return; }
+  const k = strikeAmount();
+  if (k <= 0) { if (strikeCv.style.opacity !== '0') strikeCv.style.opacity = '0'; return; }
+  if (!strikeReady) {
+    // cache[] holds the *promise*, not the image — go through loadImg, which is memoised and
+    // so resolves on the next microtask when the drawing is already in. Built once per strike
+    // and then frozen: whatever was on screen when the bolt hit is what stays there.
+    if (!strikePending) {
+      strikePending = true;
+      loadImg(deck[0]).then(img => {
+        strikePending = false;
+        if (!img || !img.naturalWidth || strikeAmount() <= 0) return;
+        const g = strikeCv.getContext('2d');
+        g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+        g.fillStyle = '#ffffff'; g.fillRect(0, 0, SIZE, SIZE);   // the drawing as it sits on paper...
+        drawCover(g, img, SIZE);
+        g.globalCompositeOperation = 'difference';               // ...then inverted
+        g.fillStyle = '#ffffff'; g.fillRect(0, 0, SIZE, SIZE);
+        g.globalCompositeOperation = 'source-over';
+        strikeReady = true;
+      });
+    }
+    strikeCv.style.opacity = '0';            // never show a stale still from the previous strike
+    return;
+  }
+  strikeCv.style.opacity = k.toFixed(3);
 }
 let wxCv2 = null, wxCtx2 = null;
 function drawWeatherAnim() {
@@ -2705,6 +2749,7 @@ function atmosEvent(kind, lvl) {           // one-shot nature events, all synthe
     // see, so a double strike looks and sounds like one event.
     const strokes = 1 + (Math.random() < .55 ? 1 : 0) + (Math.random() < .28 ? 1 : 0);
     lastThunderAt = performance.now();
+    strikeAt = lastThunderAt + delay * 1000; strikeReady = false; strikePending = false;   // freeze the frame on the flash
     thunderStrokes = [];
     let off = 0;
     for (let i = 0; i < strokes; i++) {
@@ -3282,6 +3327,7 @@ function loop(now) {
   drawDreamField();
   drawWeatherAnim();
   drawThunderFlash();
+  drawStrikeStill();
   if (playing && histIndex === null) { maybeRotateVideo(); }   // image rotation is driven by the heartbeat, see rotateDeckOnBeat()
   if (!busy && now - lastTick >= TICK_MS) {
     busy = true; lastTick = now;

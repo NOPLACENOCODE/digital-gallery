@@ -137,3 +137,9 @@ Most recent change first. Add a new entry at the top after every session.
   current beat period (bpm × character multiplier), so it stays snappy at any tempo.
 - Sized at 0.73h so the full contraction fits the canvas — it used to clip off the top of
   every beat, which flattened the pump visually.
+
+## 2026-08-28 — DREAM03: lightning still
+- When thunder strikes in a storm, the piece freezes for ~2.4s on a single drawing shown as
+  a negative — white ink on black, no video, no glitch — then fades back over 0.9s.
+- Implemented as an opaque overlay canvas inside #center rather than a branch in
+  renderFrame, so the render pipeline is completely unchanged.
