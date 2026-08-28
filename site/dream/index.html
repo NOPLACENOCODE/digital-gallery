@@ -244,7 +244,11 @@
         -webkit-mask-image:radial-gradient(circle at center, transparent 42%, #000 88%);
         mask-image:radial-gradient(circle at center, transparent 42%, #000 88%);}
   /* the heart needs real estate — this was 22px for a flat EKG trace */
-  #ekg{position:relative; width:100%; height:74px; display:block; margin:2px 0 6px;}
+  /* The canvas is taller than its layout slot so the heart can spill over the KICK
+     panel; the negative margins keep the slot at the original 82px, and
+     pointer-events:none stops the enlarged canvas swallowing clicks on the knobs. */
+  #ekg{position:relative; width:100%; height:232px; display:block; margin:-77px 0 -73px;
+       pointer-events:none;}
   #kick .ktitle{position:relative; font-size:11px; letter-spacing:3px; color:color-mix(in srgb, var(--ui-accent) 78%, #fff 22%); text-transform:uppercase; font-weight:700; text-align:center; margin-bottom:1px; text-shadow:0 0 10px color-mix(in srgb, var(--ui-accent) 55%, transparent);}
   #kick .kctl{position:relative; display:flex; align-items:center; gap:7px;}
   #kick .kctl label{font-size:10px; letter-spacing:1px; color:var(--mut); text-transform:uppercase; width:52px; flex:0 0 auto;}
@@ -3263,9 +3267,11 @@ function beatPeriodSec() {                            // mirrors the heart clock
 }
 
 const HEART_SQUEEZE = .32;      // share of the beat spent contracted — proportional, so it holds at any bpm
+const EKG_SLOT = 74;            // the layout slot the heart used to fill, in CSS px
+let HEART_SCALE = 2.5;          // how far past that slot it now draws — `let`, so it can be tried live
 let heartFrames = null;
 function loadHeartFrames() {
-  heartFrames = ['ui/heart-contracted.png?v=1', 'ui/heart-expanded.png?v=1'].map(src => {
+  heartFrames = ['ui/heart-contracted.png?v=2', 'ui/heart-expanded.png?v=2'].map(src => {
     const im = new Image(); im.src = src; return im;
   });
 }
@@ -3284,7 +3290,8 @@ function drawEkg() {                                  // name kept so the render
   const x = ((performance.now() - lastHeartBeatAt) / 1000) / beatPeriodSec();   // beats since the hit
   const img = heartFrames[(x >= 0 && x < HEART_SQUEEZE) ? 0 : 1];
   if (!img || !img.naturalWidth) return;              // first paint before the frames land
-  c.drawImage(img, (w - h) / 2, 0, h, h);             // square, fitted to the panel height
+  const size = EKG_SLOT * HEART_SCALE * dpr;          // square, overflowing the old slot
+  c.drawImage(img, (w - size) / 2, (h - size) / 2, size, size);
 }
 
 // ---------------- oscilloscope ----------------

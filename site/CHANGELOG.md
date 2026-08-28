@@ -185,3 +185,13 @@ Most recent change first. Add a new entry at the top after every session.
 - Alpha-faded toward the edges (smoothstep, opaque to r=268, gone by r=400) so the cut cables
   dissolve rather than ending mid-air.
 - Assets live in dream/ui/ — deliberately outside dream/img, which is cached immutable.
+
+## 2026-08-28 — DREAM03: bigger heart
+- The heart now draws at 2.5x its old size and deliberately spills over the KICK panel.
+- The canvas grew to 232px but negative margins keep its layout slot at exactly the original
+  82px, so nothing in the right rail moved (verified: kick panel height identical old vs new).
+- pointer-events:none on #ekg, since the enlarged canvas now overlaps the KICK knobs and would
+  otherwise swallow their clicks.
+- Frames re-exported at 720px (were 360) so they downscale rather than blur, and bumped to
+  ?v=2 since the bytes changed.
+- HEART_SCALE is `let` — 2 to 3.2 all fit the canvas without clipping.
