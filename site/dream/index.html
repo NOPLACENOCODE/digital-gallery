@@ -3155,32 +3155,64 @@ function drawPaceViz() {
 }
 
 // ---------------- the heart (pixel art, pumps on every beat) ----------------
-// Rasterised from the implicit heart curve onto a low-res grid, then shaded per cell, so
-// it reads as pixel art rather than a scaled-down icon. Beat drives a lub-dub envelope.
-let lastHeartBeatAt = -1e9, heartFlutter = -1e9;
-function ekgBeat() {                                  // kept the old name — the kick calls it
-  if (performance.now() - lastHeartBeatAt < 90) heartFlutter = performance.now();
-  else lastHeartBeatAt = performance.now();
+// Two things used to make this feel unresponsive:
+//   1. the cell size was floored to whole pixels, so the whole pulse rendered as only ~5
+//      discrete sizes. The heart is now drawn once into a 1px-per-cell sprite and blitted
+//      scaled with smoothing off — continuous size, still hard pixel edges.
+//   2. the lub-dub was hardcoded in milliseconds, so past ~120bpm the second contraction
+//      landed 60% into the beat and never resolved. The envelope is now measured in
+//      fractions of the current beat, so it stays snappy at any rate.
+let lastHeartBeatAt = -1e9;
+function ekgBeat() { lastHeartBeatAt = performance.now(); }   // name kept — the kick calls it
+
+function beatPeriodSec() {                            // mirrors the heart clock in updateClock
+  const hMult = P.char ? 1 + P.char.norm : 1;
+  return Math.max(0.14, (KICK.rate * 60) / Math.max(20, KICK.bpm * hMult));
 }
 function heartScale() {
-  const dt = (performance.now() - lastHeartBeatAt) / 1000;
-  let s = 1;
-  if (dt >= 0 && dt < 1.2) {
-    s += Math.exp(-dt * 15) * 0.30;                   // lub — the big contraction
-    if (dt > 0.15) s += Math.exp(-(dt - 0.15) * 17) * 0.17;   // dub — the second, smaller one
-  }
-  const fd = (performance.now() - heartFlutter) / 1000;
-  if (fd >= 0 && fd < 0.6) s += Math.exp(-fd * 16) * 0.16;    // arrhythmia flutter
-  return s;
+  const x = ((performance.now() - lastHeartBeatAt) / 1000) / beatPeriodSec();   // beats since the hit
+  if (x < 0 || x > 1.4) return 1;
+  let s = Math.exp(-x * 7.5) * 0.34;                  // lub — instant attack, quick release
+  if (x > 0.13) s += Math.exp(-(x - 0.13) * 9) * 0.18;   // dub — always 13% into the beat
+  return 1 + s;
 }
-let ekgCv = null, ekgCtx = null;
+
+const GRID = 17;
 function inHeart(u, v) {                              // (x²+y²−1)³ − x²y³ ≤ 0
   const x = u * 1.28, y = -v * 1.28 + 0.28;
   const a = x * x + y * y - 1;
   return a * a * a - x * x * y * y * y <= 0;
 }
+// one pixel per cell, built once; `hot` is the fully-contracted tone, alpha-blended on top
+function buildHeartSprite(hot) {
+  const cv = document.createElement('canvas');
+  cv.width = GRID; cv.height = GRID;
+  const g = cv.getContext('2d');
+  const beat = hot ? 1 : 0;
+  for (let gy = 0; gy < GRID; gy++) {
+    for (let gx = 0; gx < GRID; gx++) {
+      const u = (gx + 0.5) / GRID * 2 - 1, v = (gy + 0.5) / GRID * 2 - 1;
+      if (!inHeart(u, v)) continue;
+      const edge = inHeart(u - 2 / GRID, v) && inHeart(u + 2 / GRID, v) &&
+                   inHeart(u, v - 2 / GRID) && inHeart(u, v + 2 / GRID);
+      const lit = Math.max(0, 1 - Math.hypot(u + 0.42, v + 0.46) / 1.25);
+      let r, gg, b;
+      if (!edge) { r = 36 + beat * 18; gg = 12; b = 14; }
+      else {
+        const t = Math.min(1, lit * 1.35);
+        r = 72 + t * 94 + beat * 26; gg = 18 + t * 46; b = 20 + t * 48;
+      }
+      g.fillStyle = `rgb(${r|0},${gg|0},${b|0})`;
+      g.fillRect(gx, gy, 1, 1);
+    }
+  }
+  return cv;
+}
+let heartRest = null, heartHot = null;
+let ekgCv = null, ekgCtx = null;
 function drawEkg() {                                  // name kept so the render loop is untouched
   if (!ekgCv) { ekgCv = document.getElementById('ekg'); if (!ekgCv) return; ekgCtx = ekgCv.getContext('2d'); }
+  if (!heartRest) { heartRest = buildHeartSprite(false); heartHot = buildHeartSprite(true); }
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   const w = Math.round(ekgCv.clientWidth * dpr), h = Math.round(ekgCv.clientHeight * dpr);
   if (!w || !h) return;
@@ -3190,39 +3222,21 @@ function drawEkg() {                                  // name kept so the render
   c.clearRect(0, 0, w, h);
 
   const sc = heartScale();
-  const GRID = 17;                                    // chunky enough to read as pixels
-  const cell = Math.max(1, Math.floor((h * 0.86 * sc) / GRID));
-  const size = cell * GRID;
-  const ox = Math.round((w - size) / 2), oy = Math.round((h - size) / 2);
-  const beat = Math.min(1, Math.max(0, (sc - 1) / 0.30));   // 0..1, how hard it's contracting
+  const beat = Math.min(1, Math.max(0, (sc - 1) / 0.34));
+  const size = h * 0.73 * sc;                         // continuous; 0.73 so the full 1.34 peak still fits
+  const ox = (w - size) / 2, oy = (h - size) / 2;
 
-  for (let gy = 0; gy < GRID; gy++) {
-    for (let gx = 0; gx < GRID; gx++) {
-      const u = (gx + 0.5) / GRID * 2 - 1, v = (gy + 0.5) / GRID * 2 - 1;
-      if (!inHeart(u, v)) continue;
-      // shade from an upper-left light, and flush brighter as it contracts
-      const lit = Math.max(0, 1 - Math.hypot(u + 0.42, v + 0.46) / 1.25);
-      const edge = inHeart(u - 2.0 / GRID, v) && inHeart(u + 2.0 / GRID, v) &&
-                   inHeart(u, v - 2.0 / GRID) && inHeart(u, v + 2.0 / GRID);
-      let r, g, b;
-      // blood red: deep and desaturated, so highlights read as wet muscle not pink
-      if (!edge) { r = 36 + beat * 18; g = 12; b = 14; }                // near-black rim
-      else {
-        const t = Math.min(1, lit * 1.35);
-        // further desaturated — dried blood / old meat rather than signal red
-        r = 72 + t * 94 + beat * 26;
-        g = 18 + t * 46;
-        b = 20 + t * 48;
-      }
-      c.fillStyle = `rgb(${r|0},${g|0},${b|0})`;
-      c.fillRect(ox + gx * cell, oy + gy * cell, cell - Math.max(1, dpr * .5), cell - Math.max(1, dpr * .5));
-    }
-  }
-  // a little glow on the contraction so the pump carries at a glance
-  if (beat > 0.02) {
-    c.globalAlpha = beat * 0.30;
-    c.fillStyle = '#ff2b2b';
+  if (beat > 0.02) {                                  // flush behind the contraction
+    c.globalAlpha = beat * 0.22;
+    c.fillStyle = '#8f2b26';
     c.beginPath(); c.arc(w / 2, h / 2, size * 0.62, 0, 6.283); c.fill();
+    c.globalAlpha = 1;
+  }
+  c.imageSmoothingEnabled = false;                    // keeps the pixels hard while scaling
+  c.drawImage(heartRest, ox, oy, size, size);
+  if (beat > 0.01) {
+    c.globalAlpha = beat;
+    c.drawImage(heartHot, ox, oy, size, size);
     c.globalAlpha = 1;
   }
 }

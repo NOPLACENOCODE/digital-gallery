@@ -127,3 +127,13 @@ Most recent change first. Add a new entry at the top after every session.
 - Custom domain noplacenotime.com → Cloudflare DNS
 - Paintings: Crucifixion, Somni, Un caballo maniaco, Un caballo deprimido, After Lillies, Apariciones nocturnas, Red Portal (sold), Fake Plastic Flowers, Portal al cielo, God inside me
 - Objects: Somni Wallet (sold out), Bronze Talisman
+
+## 2026-08-28 — DREAM03: heart animation responsiveness
+- The pump was quantised to ~5 discrete sizes (cell size was floored to whole pixels).
+  The heart is now drawn once into a 17×17 sprite and blitted scaled with smoothing off:
+  continuous size, same hard pixel edges.
+- The lub-dub was hardcoded in milliseconds, so past ~120bpm the second contraction landed
+  60% into the beat and never resolved. The envelope is now measured in fractions of the
+  current beat period (bpm × character multiplier), so it stays snappy at any tempo.
+- Sized at 0.73h so the full contraction fits the canvas — it used to clip off the top of
+  every beat, which flattened the pump visually.
