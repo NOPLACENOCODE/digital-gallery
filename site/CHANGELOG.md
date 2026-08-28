@@ -149,3 +149,11 @@ Most recent change first. Add a new entry at the top after every session.
   light coming through the window burns instead of glowing white. Multiply keeps the dark
   room dark and only pushes the lit areas; applied before the drawings composite, so the
   ink is untouched.
+
+## 2026-08-28 — DREAM03: forest fire, made actually visible
+- The video-only red multiply was nearly invisible on the finished frame (measured G-19/B-20)
+  because the drawings cover most of the video and the fire vignette had already reddened it.
+- Added a second pass: a warm overlay (#ff4a1e at .45) after the drawings and fx, so the
+  firelight falls on the ink too. Fire mode now reads rgb(111,38,28) vs rgb(139,145,151) for
+  the neighbouring modes.
+- FIRE_TINT_AMT / FIRE_POST_AMT / FIRE_POST_OP are `let`, tunable live from the console.

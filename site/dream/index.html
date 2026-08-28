@@ -756,10 +756,13 @@ const ATMOS_RECIPES = [
   { hiss: .55,  wind: .12 },                                               // DARK
   { rain: .85,  wind: .8,  trees: .5, thunder: .8 },                       // STORM
 ];
-// forest fire: the room's video is multiplied by a warm red, so whatever light comes through
-// the window burns instead of glowing white. multiply leaves the dark room dark and only
-// pushes the lit areas — a plain overlay would fog the whole frame.
-const FIRE_MODE = 5, FIRE_TINT = '#ff5a3c', FIRE_TINT_AMT = .58;
+// forest fire, in two passes. The multiply on the video makes the light through the window
+// genuinely burn rather than glow white — but the drawings cover most of the frame, so on
+// its own it is nearly invisible (measured: G-19/B-20 on the finished frame). The overlay
+// pass afterwards falls on the drawings too, and is the one you actually read as firelight.
+const FIRE_MODE = 5;
+let FIRE_TINT = '#ff5a3c', FIRE_TINT_AMT = .58, FIRE_TINT_OP = 'multiply';
+let FIRE_POST = '#ff4a1e', FIRE_POST_AMT = .45, FIRE_POST_OP = 'overlay';  // over the drawings too — this is the pass you actually see
 const ATMOS_VIGNETTES = [null, 'rgba(255,255,255,.30)', null, null, 'rgba(255,255,255,.16)',
                          'rgba(140,26,12,.44)',   /* EMBERS — fire-red */
                          'rgba(0,0,0,.48)',       /* DARK — black */
@@ -2336,7 +2339,7 @@ async function renderFrame() {
   ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
   drawVideoLayer(ctx, SIZE);         // moving dream base — drawings glitch over it
   if (val('mode') === FIRE_MODE) {   // ...burning, before any drawing goes over the top
-    ctx.globalCompositeOperation = 'multiply';
+    ctx.globalCompositeOperation = FIRE_TINT_OP;
     ctx.globalAlpha = FIRE_TINT_AMT;
     ctx.fillStyle = FIRE_TINT;
     ctx.fillRect(0, 0, SIZE, SIZE);
@@ -2385,6 +2388,13 @@ async function renderFrame() {
     if (broken) { ctx.drawImage(broken, 0, 0, SIZE, SIZE); crackle(val('crush') / 16); }
   }
 
+  if (val('mode') === FIRE_MODE && FIRE_POST_AMT > 0) {   // firelight falling on the drawings too
+    ctx.globalCompositeOperation = FIRE_POST_OP;
+    ctx.globalAlpha = FIRE_POST_AMT;
+    ctx.fillStyle = FIRE_POST;
+    ctx.fillRect(0, 0, SIZE, SIZE);
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  }
   const vig = ATMOS_VIGNETTES[val('mode')];
   if (vig) {
     const g2 = ctx.createRadialGradient(SIZE / 2, SIZE / 2, SIZE * .14, SIZE / 2, SIZE / 2, SIZE * .40);   // inside the fade-mask's visible zone
