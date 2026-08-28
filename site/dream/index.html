@@ -27,6 +27,16 @@
   #app{position:relative; z-index:1;}
   /* lightning in the room — above the video, under the panels */
   /* light thrown from the window rather than a flat white wash over everything */
+  /* forest fire outside: red light thrown in through the window, over the room video but
+     under #app, so it never touches the drawings. Same window position as the lightning. */
+  /* multiply, not screen: screen can only lighten, so a bright orange over the grey room
+     came out pale pink. Multiplying a warm-to-dark-red gradient leaves the window end bright
+     and drives the corners deep red — the room reads as lit from outside. */
+  #firelight{position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0;
+             mix-blend-mode:multiply;
+             background:radial-gradient(ellipse 72% 56% at 50% 30%,
+                        rgb(255,176,116) 0%, rgb(232,96,44) 26%, rgb(168,42,18) 50%,
+                        rgb(96,20,10) 74%, rgb(44,9,5) 100%);}
   #thunderflash{position:fixed; inset:0; z-index:2; pointer-events:none; opacity:0;
                 mix-blend-mode:screen;
                 background:radial-gradient(ellipse 75% 60% at 50% 32%,
@@ -504,6 +514,7 @@
 </div>
 
 <video id="bgloop" src="video/loop-bg.mp4?v=4" muted loop playsinline></video>
+<div id="firelight" aria-hidden="true"></div>
 
 <div id="gate">
   <video id="introVid" src="video/intro.mp4?v=2" poster="video/intro-poster.jpg" preload="auto" playsinline></video>
@@ -756,13 +767,13 @@ const ATMOS_RECIPES = [
   { hiss: .55,  wind: .12 },                                               // DARK
   { rain: .85,  wind: .8,  trees: .5, thunder: .8 },                       // STORM
 ];
-// forest fire, in two passes. The multiply on the video makes the light through the window
-// genuinely burn rather than glow white — but the drawings cover most of the frame, so on
-// its own it is nearly invisible (measured: G-19/B-20 on the finished frame). The overlay
-// pass afterwards falls on the drawings too, and is the one you actually read as firelight.
+// forest fire. The drawings are left alone: the fire is outside, so it lights the ROOM.
+// #firelight throws a red glow from the window across the background video, under #app —
+// and the clips inside the circle get a matching warm multiply.
 const FIRE_MODE = 5;
 let FIRE_TINT = '#ff5a3c', FIRE_TINT_AMT = .58, FIRE_TINT_OP = 'multiply';
-let FIRE_POST = '#ff4a1e', FIRE_POST_AMT = .45, FIRE_POST_OP = 'overlay';  // over the drawings too — this is the pass you actually see
+let FIRE_GLOW_MAX = .85;      // peak opacity of the window glow
+let FIRE_FLICKER = .13;       // how much it breathes
 const ATMOS_VIGNETTES = [null, 'rgba(255,255,255,.30)', null, null, 'rgba(255,255,255,.16)',
                          'rgba(140,26,12,.44)',   /* EMBERS — fire-red */
                          'rgba(0,0,0,.48)',       /* DARK — black */
@@ -1045,6 +1056,16 @@ function drawThunderFlash() {
 // The lightning still: for a moment after a strike the piece stops moving and shows one
 // drawing as a negative — white ink on black, no video, no glitch. It is an opaque overlay
 // rather than a branch inside renderFrame, so the render pipeline is entirely unaware of it.
+let fireGlow = 0, fireEl = null;
+function drawFireLight() {
+  if (!fireEl) { fireEl = document.getElementById('firelight'); if (!fireEl) return; }
+  const target = val('mode') === FIRE_MODE ? 1 : 0;
+  fireGlow += (target - fireGlow) * .012;        // ~1.5s ease, so the fire arrives with the weather
+  if (fireGlow < .002) { fireGlow = 0; if (fireEl.style.opacity !== '0') fireEl.style.opacity = '0'; return; }
+  const t = performance.now() / 1000;            // two slow sines beating — burns, never pulses
+  const flick = 1 - FIRE_FLICKER * (.5 + .5 * Math.sin(t * 2.7) * Math.sin(t * 6.1));
+  fireEl.style.opacity = (fireGlow * FIRE_GLOW_MAX * flick).toFixed(3);
+}
 let strikeAt = -1e9, strikeReady = false, strikePending = false, strikeCv = null;
 const STRIKE_HOLD = 2400, STRIKE_FADE = 900;
 function strikeAmount() {
@@ -2388,13 +2409,6 @@ async function renderFrame() {
     if (broken) { ctx.drawImage(broken, 0, 0, SIZE, SIZE); crackle(val('crush') / 16); }
   }
 
-  if (val('mode') === FIRE_MODE && FIRE_POST_AMT > 0) {   // firelight falling on the drawings too
-    ctx.globalCompositeOperation = FIRE_POST_OP;
-    ctx.globalAlpha = FIRE_POST_AMT;
-    ctx.fillStyle = FIRE_POST;
-    ctx.fillRect(0, 0, SIZE, SIZE);
-    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
-  }
   const vig = ATMOS_VIGNETTES[val('mode')];
   if (vig) {
     const g2 = ctx.createRadialGradient(SIZE / 2, SIZE / 2, SIZE * .14, SIZE / 2, SIZE / 2, SIZE * .40);   // inside the fade-mask's visible zone
@@ -3349,6 +3363,7 @@ function loop(now) {
   drawWeatherAnim();
   drawThunderFlash();
   drawStrikeStill();
+  drawFireLight();
   if (playing && histIndex === null) { maybeRotateVideo(); }   // image rotation is driven by the heartbeat, see rotateDeckOnBeat()
   if (!busy && now - lastTick >= TICK_MS) {
     busy = true; lastTick = now;

@@ -157,3 +157,15 @@ Most recent change first. Add a new entry at the top after every session.
   firelight falls on the ink too. Fire mode now reads rgb(111,38,28) vs rgb(139,145,151) for
   the neighbouring modes.
 - FIRE_TINT_AMT / FIRE_POST_AMT / FIRE_POST_OP are `let`, tunable live from the console.
+
+## 2026-08-28 — DREAM03: forest fire lights the room, not the drawings
+- Reverted the overlay pass that tinted the drawings. The fire is outside, so it should light
+  the ROOM.
+- New #firelight layer: a red gradient thrown from the window across the background video,
+  at z-index 0 so it sits over #bgloop but under #app — it never touches the drawings. Uses
+  the same window position (50% 30%) the lightning flash already used.
+- multiply, not screen: screen can only lighten, so bright orange over the grey room came out
+  pale pink. Multiplying warm-to-dark-red leaves the window bright and drives the corners deep
+  red, which reads as a fire burning outside.
+- Eases in/out over ~1.5s with the weather and carries a slow two-sine flicker.
+- FIRE_GLOW_MAX / FIRE_FLICKER are `let`, tunable live.
