@@ -175,3 +175,13 @@ Most recent change first. Add a new entry at the top after every session.
   z-index:0 room band as #firelight — under #app, so the drawings circle is untouched.
 - Darker toward the edges so the room closes in; eases with the weather like the firelight.
 - NIGHT_DARK_MAX is `let`, tunable live.
+
+## 2026-08-28 — DREAM03: heart is now two photographed frames
+- Replaced the procedural pixel heart with Mattia's two frames: contracted on the beat,
+  expanded for the rest of it. Contraction lasts 32% of the beat, so it stays proportional
+  at any bpm.
+- Frames were composited onto a common canvas at 1:1 and centred on their alpha centroid, so
+  the real size difference between them survives (+49% lit area) and they don't drift.
+- Alpha-faded toward the edges (smoothstep, opaque to r=268, gone by r=400) so the cut cables
+  dissolve rather than ending mid-air.
+- Assets live in dream/ui/ — deliberately outside dream/img, which is cached immutable.
