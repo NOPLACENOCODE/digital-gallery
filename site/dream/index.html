@@ -535,7 +535,7 @@
 <div id="nightdark" aria-hidden="true"></div>
 
 <div id="gate">
-  <video id="introVid" src="video/intro.mp4?v=4" poster="video/intro-poster.jpg?v=3" preload="auto" playsinline></video>
+  <video id="introVid" src="video/intro.mp4?v=5" poster="video/intro-poster.jpg?v=3" preload="auto" playsinline></video>
   <video id="gateLoop" src="video/loop-bg.mp4?v=7" loop playsinline></video>
   <div id="gateStart">
     <div class="gs-t">best with sound on</div>
@@ -3567,7 +3567,7 @@ if (/[?&]mood\b/.test(location.search)) {
       gateLoop.play().catch(() => { gateLoop.muted = true; gateLoop.play().catch(() => {}); });
     }
     vid.addEventListener('timeupdate', () => {
-      if (vid.duration && vid.currentTime >= vid.duration - 7) showPrompt();   // prompt appears 7s before the clip ends — the camera has settled by then, so the cut to the loop still matches
+      if (vid.duration && vid.currentTime >= vid.duration - 0.15) showPrompt();   // the clip is now cut to end exactly where the camera settles, so swap at the very end — 0.6s earlier is already 7.6/255 off the loop ('ended' below is the real backstop)
     });
     vid.addEventListener('ended', showPrompt);
   }

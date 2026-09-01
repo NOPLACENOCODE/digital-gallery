@@ -222,3 +222,13 @@ Most recent change first. Add a new entry at the top after every session.
   Now fires at duration-7, so it appears at 11.2s.
 - Checked the cut still matches: intro frame at duration-7 vs the loop's first frame is
   1.46/255 (vs 1.39 at duration-2), and the camera has settled by then.
+
+## 2026-09-01 — DREAM03: intro trimmed instead of cutting it short
+- Reverted the duration-7 prompt trigger. Instead the intro itself is cut: last 8s removed,
+  18.14s -> 10.18s, re-encoded from the original source (not the already-encoded copy).
+- The trigger moved to duration-0.15 because the trimmed clip now ends exactly where the
+  camera settles. Firing earlier lands mid-move: 0.6s before the end is already 7.6/255 off
+  the loop, and 2s before is 40/255. At the end it is 1.63/255. The 'ended' handler is the
+  real backstop.
+- Poster left alone — trimming the tail does not change the first frame (1.14/255).
+- intro bumped to ?v=5.
