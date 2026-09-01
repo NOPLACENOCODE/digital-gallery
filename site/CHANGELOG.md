@@ -232,3 +232,13 @@ Most recent change first. Add a new entry at the top after every session.
   real backstop.
 - Poster left alone — trimming the tail does not change the first frame (1.14/255).
 - intro bumped to ?v=5.
+
+## 2026-09-01 — DREAM03: final intro (iMovie-timed)
+- Replaced the intro with finalintrovideo (10.05s, cut in iMovie to land on the loop's opening
+  frame), re-encoded to 960x540.
+- Trigger moved to duration-0.04 so the swap lands on the intro's LAST frame — 0.15s early is
+  already 3.20/255 off the loop, 0.6s is 8.62. The 'ended' handler is the real trigger.
+- Remaining mismatch at the cut is 2.71/255 and is a uniform exposure difference between the
+  two exports (intro ends +1.4R/+1.8G/+2.9B brighter); correcting that offset leaves 2.05.
+  Not colour-matched — flagged rather than silently graded.
+- Poster unchanged (1.14/255 against the new first frame). intro bumped to ?v=6.
