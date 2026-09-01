@@ -206,3 +206,13 @@ Most recent change first. Add a new entry at the top after every session.
   weather reads as a panel powering on rather than snapping between two static states.
 - Trade taken deliberately: lightness no longer encodes the weather, hue does. Dark night is
   a lit indigo rather than black — an indicator for night, not a picture of it.
+
+## 2026-09-01 — DREAM03: new intro and room loop
+- Replaced the intro (VIDEO2NEW, 18.1s) and the background room loop (loop2, 16.2s), both
+  re-encoded to 960x540 H.264 with audio preserved.
+- The new pair matches at the gate's cut point: the intro frame at duration-2 differs from the
+  loop's first frame by 1.39/255, down from 5.24 with the old pair. The loop's own seam is
+  0.90/255. No crossfade needed — the hard swap is left exactly as it was.
+- intro-poster.jpg regenerated from the new intro's first frame.
+- Versions bumped (dream/video is cached immutable for a year): intro v=4, poster v=3,
+  loop-bg v=7 on BOTH references (#bgloop and #gateLoop).
