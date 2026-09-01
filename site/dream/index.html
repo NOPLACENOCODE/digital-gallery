@@ -3567,7 +3567,7 @@ if (/[?&]mood\b/.test(location.search)) {
       gateLoop.play().catch(() => { gateLoop.muted = true; gateLoop.play().catch(() => {}); });
     }
     vid.addEventListener('timeupdate', () => {
-      if (vid.duration && vid.currentTime >= vid.duration - 2) showPrompt();   // prompt appears 2s before the clip would actually end
+      if (vid.duration && vid.currentTime >= vid.duration - 7) showPrompt();   // prompt appears 7s before the clip ends — the camera has settled by then, so the cut to the loop still matches
     });
     vid.addEventListener('ended', showPrompt);
   }

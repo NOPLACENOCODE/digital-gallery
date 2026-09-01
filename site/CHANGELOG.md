@@ -216,3 +216,9 @@ Most recent change first. Add a new entry at the top after every session.
 - intro-poster.jpg regenerated from the new intro's first frame.
 - Versions bumped (dream/video is cached immutable for a year): intro v=4, poster v=3,
   loop-bg v=7 on BOTH references (#bgloop and #gateLoop).
+
+## 2026-09-01 — DREAM03: "start dreaming" appears sooner
+- The prompt fired at intro duration-2; with the new 18.1s intro that meant a 16.2s wait.
+  Now fires at duration-7, so it appears at 11.2s.
+- Checked the cut still matches: intro frame at duration-7 vs the loop's first frame is
+  1.46/255 (vs 1.39 at duration-2), and the camera has settled by then.
